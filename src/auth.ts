@@ -1,11 +1,11 @@
 // src/auth.ts
-import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
-import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import NextAuth, { type NextAuthOptions } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
-import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 
 const prisma = new PrismaClient();
 
@@ -14,34 +14,41 @@ const CredentialsSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
-export const {
-  handlers,
-  auth,
-  signIn,
-  signOut,
-} = NextAuth({
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+
+  // We persist sessions in the DB (Session model is in your Prisma schema).
   session: { strategy: "database" },
+
+  // Send unauthenticated users to our login page
   pages: { signIn: "/login" },
+
   providers: [
-    // Google OAuth
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    // Google OAuth; support either GOOGLE_* or AUTH_GOOGLE_* env names
+    GoogleProvider({
+      clientId:
+        process.env.GOOGLE_CLIENT_ID ||
+        (process.env.AUTH_GOOGLE_ID as string) ||
+        "",
+      clientSecret:
+        process.env.GOOGLE_CLIENT_SECRET ||
+        (process.env.AUTH_GOOGLE_SECRET as string) ||
+        "",
     }),
 
     // Email + password (local) sign-in
-    Credentials({
+    CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      authorize: async (raw) => {
+      async authorize(raw) {
         const parsed = CredentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
 
         const { email, password } = parsed.data;
+
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user?.passwordHash) return null;
 
@@ -58,25 +65,17 @@ export const {
       },
     }),
   ],
+
   callbacks: {
-  async session({ session, user }) {
-    if (session.user && user) {
-      (session.user as any).role = (user as any).role ?? "user";
-    }
-    return session;
+    // Put the role on the session object for easy checks client-side
+    async session({ session, user }) {
+      if (session.user && user) {
+        (session.user as any).role = (user as any).role ?? "user";
+      }
+      return session;
+    },
   },
-  async authorized({ auth, request }) {
-    const url = new URL(request.url);
-    const pathname = url.pathname;
+};
 
-    // Allow unauthenticated access to the login page and the Auth API endpoints
-    if (pathname.startsWith("/login") || pathname.startsWith("/api/auth")) {
-      return true;
-    }
-    // Otherwise require a valid user session
-    return !!auth?.user;
-  },
-},
-
-});
-console.log("auth export:", typeof auth);
+// For App Router we still export the handler so /api/auth works via route.ts
+export default NextAuth(authOptions);

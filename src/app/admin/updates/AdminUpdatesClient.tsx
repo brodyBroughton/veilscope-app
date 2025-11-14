@@ -91,8 +91,15 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
     initialUpdates[0] ? toFormState(initialUpdates[0]) : emptyFormState()
   );
   const [saving, setSaving] = useState(false);
+  const [savingAll, setSavingAll] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  // Delete confirmation state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteTitle, setConfirmDeleteTitle] = useState<string>("");
+  const [deleting, setDeleting] = useState(false);
 
   function handleSelect(update: AdminUpdate) {
     setSelectedId(update.id);
@@ -106,6 +113,25 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
     setForm(emptyFormState());
     setError(null);
     setMessage(null);
+  }
+
+  function updateForm<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      setHasUnsavedChanges(true);
+
+      // Keep selected update in the list in sync (for "Save all" semantics)
+      if (selectedId) {
+        const merged = fromFormState(next);
+        setUpdates((prevUpdates) =>
+          prevUpdates.map((u) =>
+            u.id === selectedId ? { ...u, ...merged } : u
+          )
+        );
+      }
+
+      return next;
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -151,6 +177,8 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
         setForm(toFormState(saved));
         setMessage("Update created successfully!");
       }
+
+      setHasUnsavedChanges(false);
     } catch (err) {
       console.error(err);
       setError("Network error while saving.");
@@ -159,16 +187,142 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
     }
   }
 
+  async function handleSaveAll() {
+    if (!updates.length) return;
+
+    setSavingAll(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const savedResults: AdminUpdate[] = [];
+
+      // Persist each update as it currently exists in local state.
+      for (const u of updates) {
+        const res = await fetch("/api/admin/updates", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            id: u.id,
+            title: u.title,
+            slug: u.slug,
+            summary: u.summary,
+            date: u.date,
+            image: u.image,
+            imageAlt: u.imageAlt,
+            tags: u.tags,
+            featured: u.featured,
+            published: u.published,
+            content: u.content,
+          }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to save some updates.");
+        }
+
+        const saved = (await res.json()) as AdminUpdate;
+        savedResults.push(saved);
+      }
+
+      setUpdates(savedResults);
+      setHasUnsavedChanges(false);
+      setMessage("All changes saved successfully!");
+    } catch (err: any) {
+      console.error("Save all error:", err);
+      setError(err.message || "Failed to save all changes.");
+    } finally {
+      setSavingAll(false);
+    }
+  }
+
+  function handleDeleteClick(update: AdminUpdate) {
+    setConfirmDeleteId(update.id);
+    setConfirmDeleteTitle(update.title);
+  }
+
+  async function handleConfirmDelete() {
+    if (!confirmDeleteId) return;
+
+    setDeleting(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const res = await fetch("/api/admin/updates", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: confirmDeleteId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete update.");
+      }
+
+      setUpdates((prev) => {
+        const next = prev.filter((u) => u.id !== confirmDeleteId);
+
+        // If we just deleted the one being edited, move selection
+        if (selectedId === confirmDeleteId) {
+          if (next.length > 0) {
+            const first = next[0];
+            setSelectedId(first.id);
+            setForm(toFormState(first));
+          } else {
+            setSelectedId(null);
+            setForm(emptyFormState());
+          }
+        }
+
+        return next;
+      });
+
+      setMessage("Update deleted successfully.");
+      setConfirmDeleteId(null);
+      setHasUnsavedChanges(false);
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      setError(err.message || "Failed to delete update.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function handleCancelDelete() {
+    setConfirmDeleteId(null);
+  }
+
   return (
     <div className={styles.adminContainer}>
       <header className={styles.header}>
-        <h1 className="text-3xl font-extrabold tracking-tight">
-          Project Updates <span className="font-normal text-[var(--ink-2)]">(Admin)</span>
-        </h1>
-        <p className="mt-2 max-w-2xl text-base text-[var(--ink-2)]">
-          Manage the updates shown on the marketing site. Only{" "}
-          <strong className="text-[var(--ink)]">published</strong> updates are visible publicly.
-        </p>
+        <div className={styles.headerMain}>
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight">
+              Project Updates{" "}
+              <span className="font-normal text-[var(--ink-2)]">(Admin)</span>
+            </h1>
+            <p className="mt-3 max-w-3xl text-base leading-relaxed text-[var(--ink-2)]">
+              Manage the updates shown on the marketing site. Only{" "}
+              <strong className="text-[var(--ink)]">published</strong> updates
+              are visible publicly.
+            </p>
+          </div>
+          <div className={styles.headerActions}>
+            {hasUnsavedChanges && (
+              <span className={styles.unsavedBadge}>Unsaved changes</span>
+            )}
+            <button
+              type="button"
+              className={styles.buttonPrimary}
+              onClick={handleSaveAll}
+              disabled={savingAll || !updates.length}
+            >
+              {savingAll ? "Saving all…" : "Save all changes"}
+            </button>
+          </div>
+        </div>
       </header>
 
       <div className={styles.gridTwoCols}>
@@ -192,7 +346,7 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
           ) : (
             <ul className={styles.listItems}>
               {updates.map((u) => (
-                <li key={u.id}>
+                <li key={u.id} className={styles.listItemRow}>
                   <button
                     type="button"
                     onClick={() => handleSelect(u)}
@@ -219,6 +373,13 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
                       )}
                     </div>
                   </button>
+                  <button
+                    type="button"
+                    className={styles.deleteButton}
+                    onClick={() => handleDeleteClick(u)}
+                  >
+                    Delete
+                  </button>
                 </li>
               ))}
             </ul>
@@ -232,34 +393,32 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
           </h2>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+            <div className="mb-5 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3.5 text-sm text-red-400">
               <strong className="font-semibold">Error:</strong> {error}
             </div>
           )}
           {message && (
-            <div className="mb-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-sm text-emerald-400">
+            <div className="mb-5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-3.5 text-sm text-emerald-400">
               <strong className="font-semibold">Success:</strong> {message}
             </div>
           )}
 
-          <form className="grid gap-5" onSubmit={handleSubmit}>
-            <div className="grid gap-2">
+          <form className="grid gap-6" onSubmit={handleSubmit}>
+            <div className="grid gap-2.5">
               <label className="text-sm font-semibold text-[var(--ink)]">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                className="h-10 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 value={form.title}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, title: e.target.value }))
-                }
+                onChange={(e) => updateForm("title", e.target.value)}
                 required
                 placeholder="Enter update title"
               />
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid gap-2.5">
               <label className="text-sm font-semibold text-[var(--ink)]">
                 Slug{" "}
                 <span className="text-xs font-normal text-[var(--ink-2)]">
@@ -268,46 +427,40 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
               </label>
               <input
                 type="text"
-                className="h-10 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 value={form.slug}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, slug: e.target.value }))
-                }
+                onChange={(e) => updateForm("slug", e.target.value)}
                 placeholder="url-friendly-slug"
               />
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid gap-2.5">
               <label className="text-sm font-semibold text-[var(--ink)]">
                 Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
-                className="h-10 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 value={form.date}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, date: e.target.value }))
-                }
+                onChange={(e) => updateForm("date", e.target.value)}
                 required
               />
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid gap-2.5">
               <label className="text-sm font-semibold text-[var(--ink)]">
                 Summary <span className="text-red-500">*</span>
               </label>
               <textarea
-                className="min-h-[80px] rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y"
+                className="min-h-[90px] rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 py-2.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y"
                 value={form.summary}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, summary: e.target.value }))
-                }
+                onChange={(e) => updateForm("summary", e.target.value)}
                 required
                 placeholder="Brief summary of the update (shown in cards)"
               />
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid gap-2.5">
               <label className="text-sm font-semibold text-[var(--ink)]">
                 Tags{" "}
                 <span className="text-xs font-normal text-[var(--ink-2)]">
@@ -316,69 +469,62 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
               </label>
               <input
                 type="text"
-                className="h-10 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 value={form.tagsCsv}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, tagsCsv: e.target.value }))
-                }
+                onChange={(e) => updateForm("tagsCsv", e.target.value)}
                 placeholder="AI, Product, Release"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="grid gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid gap-2.5">
                 <label className="text-sm font-semibold text-[var(--ink)]">
                   Hero Image URL
                 </label>
                 <input
                   type="text"
-                  className="h-10 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                  className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
                   value={form.image}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, image: e.target.value }))
-                  }
+                  onChange={(e) => updateForm("image", e.target.value)}
                   placeholder="/assets/img/updates/image.jpg"
                 />
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid gap-2.5">
                 <label className="text-sm font-semibold text-[var(--ink)]">
                   Image Alt Text
                 </label>
                 <input
                   type="text"
-                  className="h-10 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                  className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
                   value={form.imageAlt}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, imageAlt: e.target.value }))
-                  }
+                  onChange={(e) => updateForm("imageAlt", e.target.value)}
                   placeholder="Describe the image"
                 />
               </div>
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid gap-2.5">
               <label className="text-sm font-semibold text-[var(--ink)]">
-                Content <span className="text-xs font-normal text-[var(--ink-2)]">(HTML)</span>
+                Content{" "}
+                <span className="text-xs font-normal text-[var(--ink-2)]">
+                  (HTML)
+                </span>
               </label>
               <textarea
-                className="min-h-[200px] rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3 py-2 text-sm font-mono text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y"
+                className="min-h-[240px] rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 py-2.5 text-sm font-mono text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y"
                 value={form.content}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, content: e.target.value }))
-                }
+                onChange={(e) => updateForm("content", e.target.value)}
                 placeholder="<p>Long-form HTML content goes here...</p>"
               />
             </div>
 
-            <div className="flex gap-6 text-sm pt-2">
+            <div className="flex gap-8 text-sm pt-3">
               <label className="inline-flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={form.featured}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, featured: e.target.checked }))
-                  }
+                  onChange={(e) => updateForm("featured", e.target.checked)}
                 />
                 <span className="font-medium">Featured Update</span>
               </label>
@@ -387,15 +533,13 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
                 <input
                   type="checkbox"
                   checked={form.published}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, published: e.target.checked }))
-                  }
+                  onChange={(e) => updateForm("published", e.target.checked)}
                 />
                 <span className="font-medium">Published</span>
               </label>
             </div>
 
-            <div className="pt-2 border-t border-[var(--ui)]">
+            <div className="pt-3 border-t border-[var(--ui)] mt-2">
               <button
                 type="submit"
                 disabled={saving}
@@ -411,6 +555,37 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
           </form>
         </section>
       </div>
+
+      {/* Delete confirmation modal */}
+      {confirmDeleteId && (
+        <div className={styles.modalBackdrop}>
+          <div className={styles.modal}>
+            <h3 className={styles.modalTitle}>Delete this update?</h3>
+            <p className={styles.modalBody}>
+              "{confirmDeleteTitle}" will be permanently removed. This action
+              cannot be undone.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.buttonDanger}
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Yes, delete"}
+              </button>
+              <button
+                type="button"
+                className={styles.buttonGhost}
+                onClick={handleCancelDelete}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

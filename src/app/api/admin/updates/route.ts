@@ -40,6 +40,10 @@ const UpdateUpdateSchema = UpdateBaseSchema.partial().extend({
   id: z.string().min(1),
 });
 
+const DeleteSchema = z.object({
+  id: z.string().min(1),
+});
+
 function slugify(input: string) {
   return input
     .toLowerCase()
@@ -279,6 +283,35 @@ export async function PATCH(req: Request) {
     });
   } catch (err) {
     console.error("Admin updates PATCH error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  const session = await requireAdmin();
+  if (!session) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const json = await req.json();
+    const parsed = DeleteSchema.safeParse(json);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { id } = parsed.data;
+
+    await prisma.update.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Admin updates DELETE error:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

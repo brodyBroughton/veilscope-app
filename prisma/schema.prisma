@@ -21,6 +21,28 @@ model User {
   updatedAt     DateTime  @updatedAt
 }
 
+model Update {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  summary   String
+  date      DateTime
+
+  image     String   @default("")
+  imageAlt  String   @default("")
+
+  tags      String[] @default([])
+
+  featured  Boolean  @default(false)
+  content   String   @db.Text
+
+  published Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
 model Account {
   id                String  @id @default(cuid())
   userId            String

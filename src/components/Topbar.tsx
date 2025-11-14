@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { Tab } from "@/types/ui";
 
 interface TopbarProps {
@@ -12,6 +12,8 @@ interface TopbarProps {
   onOpenSettings: () => void;
 }
 
+const LOGIN_PATH = "/login";
+
 export default function Topbar({
   tabs,
   activeKey,
@@ -22,6 +24,7 @@ export default function Topbar({
 }: TopbarProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
 
   const handleNotificationsClick = () => {
     setProfileOpen(false);
@@ -31,6 +34,38 @@ export default function Topbar({
     setNotifOpen(false);
     setProfileOpen((o) => !o);
   };
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/me", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          headers: { accept: "application/json" },
+        });
+
+        // If middleware rewrites to /login, fetch may follow and return HTML.
+        const ct = res.headers.get("content-type") || "";
+        if (res.status === 401 || !ct.includes("application/json")) {
+          window.location.replace(LOGIN_PATH);
+          return;
+        }
+
+        const data = (await res.json()) as { email?: string };
+        if (mounted) setEmail(data?.email ?? null);
+      } catch {
+        // Network or server error -> fail safe to login
+        window.location.replace(LOGIN_PATH);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <header className="app-topbar" role="banner">
@@ -157,16 +192,28 @@ export default function Topbar({
             aria-expanded={profileOpen}
             onClick={handleProfileClick}
           >
-            <img className="profile-photo" src="https://placehold.co/32x32" alt="User avatar" />
+            <img
+              className="profile-photo"
+              src="https://placehold.co/32x32"
+              alt="User avatar"
+            />
           </button>
           {profileOpen && (
             <div className="popover" role="dialog" aria-label="Profile">
               <div className="popover-card profile-card">
-                <img className="profile-photo" src="https://placehold.co/96x96" alt="" />
+                <img
+                  className="profile-photo"
+                  src="https://placehold.co/96x96"
+                  alt=""
+                />
                 <div className="profile-meta">
-                  <strong>John Smith</strong>
-                  <span className="profile-email">john.smith@example.com</span>
-                  <a href="#" className="mini-link">Manage account</a>
+                  <strong>{email ?? "Loading…"}</strong>
+                  <span className="profile-email">{email ?? ""}</span>
+                  <form method="POST" action="/api/logout">
+                    <button type="submit" className="mini-link signout-btn">
+                      Sign out
+                    </button>
+                  </form>
                 </div>
               </div>
             </div>

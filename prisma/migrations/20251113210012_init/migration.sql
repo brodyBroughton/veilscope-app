@@ -14,6 +14,25 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
+CREATE TABLE "Update" (
+    "id" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "summary" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "image" TEXT NOT NULL DEFAULT '',
+    "imageAlt" TEXT NOT NULL DEFAULT '',
+    "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "featured" BOOLEAN NOT NULL DEFAULT false,
+    "content" TEXT NOT NULL,
+    "published" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Update_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Account" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -50,6 +69,9 @@ CREATE TABLE "VerificationToken" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Update_slug_key" ON "Update"("slug");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");

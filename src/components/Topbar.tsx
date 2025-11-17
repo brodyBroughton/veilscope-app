@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import type { Tab } from "@/types/ui";
 
 interface TopbarProps {
@@ -25,15 +26,48 @@ export default function Topbar({
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  
+  // refs for detecting outside click
+  const profileRef = useRef<HTMLDivElement | null>(null);
+  const avatarButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const handleNotificationsClick = () => {
     setProfileOpen(false);
     setNotifOpen((o) => !o);
   };
+
   const handleProfileClick = () => {
     setNotifOpen(false);
     setProfileOpen((o) => !o);
   };
+
+  const handleProfileSettingsClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
+    setProfileOpen(false);
+    onOpenSettings?.();
+    // navigation will happen via Link
+  };
+
+  // click outside handler
+  useEffect(() => {
+    if (!profileOpen) return;
+
+    const handleDocumentClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(target) &&
+        avatarButtonRef.current &&
+        !avatarButtonRef.current.contains(target)
+      ) {
+        setProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleDocumentClick);
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+    };
+  }, [profileOpen]);
 
   useEffect(() => {
     let mounted = true;
@@ -47,7 +81,6 @@ export default function Topbar({
           headers: { accept: "application/json" },
         });
 
-        // If middleware rewrites to /login, fetch may follow and return HTML.
         const ct = res.headers.get("content-type") || "";
         if (res.status === 401 || !ct.includes("application/json")) {
           window.location.replace(LOGIN_PATH);
@@ -57,7 +90,6 @@ export default function Topbar({
         const data = (await res.json()) as { email?: string };
         if (mounted) setEmail(data?.email ?? null);
       } catch {
-        // Network or server error -> fail safe to login
         window.location.replace(LOGIN_PATH);
       }
     })();
@@ -129,29 +161,6 @@ export default function Topbar({
         <span className="action">
           <button
             className="icon-btn"
-            aria-label="Open settings"
-            onClick={onOpenSettings}
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 ..."></path>
-            </svg>
-          </button>
-        </span>
-
-        <span className="action">
-          <button
-            className="icon-btn"
             aria-label="Open notifications"
             aria-expanded={notifOpen}
             onClick={handleNotificationsClick}
@@ -186,6 +195,7 @@ export default function Topbar({
 
         <span className="action">
           <button
+            ref={avatarButtonRef}
             className="avatar"
             aria-label="Account"
             aria-haspopup="dialog"
@@ -199,7 +209,12 @@ export default function Topbar({
             />
           </button>
           {profileOpen && (
-            <div className="popover" role="dialog" aria-label="Profile">
+            <div
+              ref={profileRef}
+              className="popover"
+              role="dialog"
+              aria-label="Profile"
+            >
               <div className="popover-card profile-card">
                 <img
                   className="profile-photo"
@@ -209,6 +224,18 @@ export default function Topbar({
                 <div className="profile-meta">
                   <strong>{email ?? "Loading…"}</strong>
                   <span className="profile-email">{email ?? ""}</span>
+
+                  <Link
+                    href="/settings"
+                    className="mini-link profile-settings-btn"
+                    onClick={handleProfileSettingsClick}
+                  >
+                    <span className="profile-settings-icon" aria-hidden="true">
+                      ⚙️
+                    </span>
+                    <span>Settings</span>
+                  </Link>
+
                   <form method="POST" action="/api/logout">
                     <button type="submit" className="mini-link signout-btn">
                       Sign out

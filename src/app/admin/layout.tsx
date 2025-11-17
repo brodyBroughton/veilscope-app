@@ -1,4 +1,3 @@
-// app/admin/layout.tsx
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
@@ -18,11 +17,10 @@ export default async function AdminLayout({
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as string | undefined;
 
-  // Not logged in OR not an admin → bounce to main app (or you could use `notFound()`).
+  // Only admins can access this section; others are redirected home.
   if (!session || role !== "admin") {
     redirect(APP_HOME_PATH);
   }
 
-  // Admin is allowed; render the admin section.
   return <>{children}</>;
 }

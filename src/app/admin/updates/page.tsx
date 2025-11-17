@@ -1,4 +1,3 @@
-// src/app/admin/updates/page.tsx
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { redirect } from "next/navigation";
@@ -23,7 +22,6 @@ export default async function AdminUpdatesPage() {
   const role = (session?.user as any)?.role;
 
   if (!session || role !== "admin") {
-    // could also redirect("/login") if you prefer
     redirect("/");
   }
 
@@ -36,7 +34,7 @@ export default async function AdminUpdatesPage() {
     slug: u.slug,
     title: u.title,
     summary: u.summary,
-    date: u.date.toISOString().slice(0, 10), // YYYY-MM-DD
+    date: u.date.toISOString().slice(0, 10),
     image: u.image,
     imageAlt: u.imageAlt,
     tags: u.tags,

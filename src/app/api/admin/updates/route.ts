@@ -1,4 +1,3 @@
-// src/app/api/admin/updates/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
@@ -18,7 +17,7 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
-// Used for both create + update
+// Shared fields for create and update operations.
 const UpdateBaseSchema = z.object({
   title: z.string().min(3).max(200),
   summary: z.string().min(3).max(1000),
@@ -73,7 +72,7 @@ async function requireAdmin() {
  *   and un-feature any additional ones.
  */
 async function enforceFeaturedCap(tx: PrismaClient, newFeaturedId: string) {
-  // Find all *other* featured updates ordered by date DESC (newest first)
+  // Find all other featured updates ordered by date DESC (newest first).
   const others = await tx.update.findMany({
     where: {
       featured: true,
@@ -83,9 +82,9 @@ async function enforceFeaturedCap(tx: PrismaClient, newFeaturedId: string) {
     select: { id: true },
   });
 
-  // We want: newFeatured + at most ONE other (the newest one).
+  // Keep the new featured record plus at most one other (the newest one).
   if (others.length > 1) {
-    const toUnfeature = others.slice(1); // keep others[0], unfeature the rest
+    const toUnfeature = others.slice(1);
     await tx.update.updateMany({
       where: {
         id: {
@@ -113,7 +112,7 @@ export async function GET() {
       slug: u.slug,
       title: u.title,
       summary: u.summary,
-      date: u.date.toISOString().slice(0, 10), // YYYY-MM-DD for form
+      date: u.date.toISOString().slice(0, 10),
       image: u.image,
       imageAlt: u.imageAlt,
       tags: u.tags,
@@ -142,11 +141,11 @@ export async function POST(req: Request) {
 
     const data = parsed.data;
 
-    // Build a unique slug first (outside transaction; DB has unique constraint as a safety net)
+    // Build a unique slug before writing; the DB still enforces uniqueness.
     const baseSlug = data.slug?.trim() || slugify(data.title);
     let slug = baseSlug;
     let counter = 2;
-    // ensure slug unique
+
     while (
       await prisma.update.findUnique({
         where: { slug },
@@ -156,7 +155,7 @@ export async function POST(req: Request) {
       slug = `${baseSlug}-${counter++}`;
     }
 
-    // Create + enforce "max 2 featured" inside a transaction
+    // Create the update and enforce the featured cap in one transaction.
     const created = await prisma.$transaction(async (tx) => {
       const createdUpdate = await tx.update.create({
         data: {

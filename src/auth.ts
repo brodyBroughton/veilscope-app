@@ -1,4 +1,3 @@
-// src/auth.ts
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -14,16 +13,15 @@ const CredentialsSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
-// Match your DB: "user" | "admin"
 type UserRole = "user" | "admin";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
 
-  // JWT sessions so middleware & server can read role from the token.
+  // JWT sessions keep the role available to middleware and server actions.
   session: { strategy: "jwt" },
 
-  // Unauthenticated users go to /login
+  // Unauthenticated users go to /login.
   pages: { signIn: "/login" },
 
   providers: [
@@ -56,7 +54,7 @@ export const authOptions: NextAuthOptions = {
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        // Return fields we want baked into the JWT on initial sign-in.
+        // Return fields that should be persisted in the initial JWT.
         return {
           id: user.id,
           email: user.email ?? null,
@@ -69,13 +67,9 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    /**
-     * JWT callback runs on initial sign-in (with `user`) and on subsequent
-     * requests (with only `token`). We use this to attach the role, id, etc.
-     * to the token, so it's available in middleware and on the server.
-     */
+    // Shape the JWT so downstream middleware and server actions can read role and id.
     async jwt({ token, user }) {
-      // On first sign-in, `user` is defined (from provider/authorize)
+      // On first sign-in, `user` is defined (from provider/authorize).
       if (user) {
         token.sub = (user as any).id ?? token.sub;
         token.email = user.email ?? token.email;
@@ -85,8 +79,7 @@ export const authOptions: NextAuthOptions = {
           ("user" as UserRole);
       }
 
-      // If somehow the token still has no role but we know the email,
-      // backfill it from the DB once. Defensive: keeps RBAC consistent.
+      // Backfill the role once if it was omitted but we have the email.
       if (!(token as any).role && token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email as string },
@@ -99,10 +92,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
 
-    /**
-     * Session callback shapes what the client sees from `useSession()` etc.
-     * We mirror role + id into `session.user` for convenient checks in components.
-     */
+    // Mirror role and id into session.user for client-side checks.
     async session({ session, token }) {
       if (session.user) {
         session.user.email = token.email as string | undefined;

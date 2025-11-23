@@ -15,9 +15,12 @@ export default function LoginPage() {
   async function handleCredentials(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const normalizedEmail = email.trim().toLowerCase();
+
     startTransition(async () => {
       const res = await signIn("credentials", {
-        email,
+        email: normalizedEmail,
         password,
         redirect: false,
         callbackUrl: "/",

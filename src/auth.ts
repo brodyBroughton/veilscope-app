@@ -46,9 +46,12 @@ export const authOptions: NextAuthOptions = {
         const parsed = CredentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
 
-        const { email, password } = parsed.data;
+        const normalizedEmail = parsed.data.email.trim().toLowerCase();
+        const { password } = parsed.data;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+          where: { email: normalizedEmail },
+        });
         if (!user?.passwordHash) return null;
 
         const ok = await bcrypt.compare(password, user.passwordHash);

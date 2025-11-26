@@ -43,11 +43,13 @@ export default function SignupPage() {
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     startTransition(async () => {
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, password: pw }),
+        body: JSON.stringify({ email: normalizedEmail, password: pw }),
       });
 
       if (!res.ok) {
@@ -57,7 +59,7 @@ export default function SignupPage() {
 
       // Auto-login after successful signup → app home.
       const signed = await signIn("credentials", {
-        email,
+        email: normalizedEmail,
         password: pw,
         redirect: false,
         callbackUrl: "/",

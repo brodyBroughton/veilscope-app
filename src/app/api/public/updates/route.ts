@@ -1,4 +1,3 @@
-// src/app/api/public/updates/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
@@ -15,7 +14,7 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
-// Shape for public updates (what marketing site expects)
+// Shape for public updates returned to the marketing site.
 type PublicUpdate = {
   slug: string;
   title: string;

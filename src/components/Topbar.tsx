@@ -27,7 +27,7 @@ export default function Topbar({
   const [profileOpen, setProfileOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   
-  // refs for detecting outside click
+  // Refs used for outside-click detection.
   const profileRef = useRef<HTMLDivElement | null>(null);
   const avatarButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -44,10 +44,9 @@ export default function Topbar({
   const handleProfileSettingsClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
     setProfileOpen(false);
     onOpenSettings?.();
-    // navigation will happen via Link
   };
 
-  // click outside handler
+  // Close the profile menu when clicking outside the popover.
   useEffect(() => {
     if (!profileOpen) return;
 

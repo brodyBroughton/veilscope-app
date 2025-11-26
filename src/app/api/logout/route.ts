@@ -1,4 +1,3 @@
-// src/app/api/logout/route.ts
 import { NextResponse } from "next/server";
 import { cookies, headers as nextHeaders } from "next/headers";
 
@@ -11,7 +10,7 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 export async function POST(request: Request) {
-  // headers() is async in the App Router
+  // headers() is async in the App Router.
   const hdrs = await nextHeaders();
   const origin = hdrs.get("origin");
   if (origin && !ALLOWED_ORIGINS.has(origin)) {
@@ -27,12 +26,12 @@ export async function POST(request: Request) {
     "__Host-next-auth.session-token",
   ];
 
-  // Build redirect target using env or current origin (works on localhost & prod)
+  // Build redirect target using env or current origin.
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? new URL(request.url).origin;
   const loginUrl = new URL("/login", base);
   const res = NextResponse.redirect(loginUrl, 303);
 
-  // Clear cookies (both secure and non-secure variants)
+  // Clear cookies (both secure and non-secure variants).
   const clearCookie = (name: string, secure: boolean) => {
     res.cookies.set(name, "", {
       expires: new Date(0),
@@ -57,7 +56,7 @@ export async function POST(request: Request) {
 
   res.headers.set("Cache-Control", "no-store, max-age=0");
   res.headers.set("Pragma", "no-cache");
-  // Wipe cache & storage & cookies for max safety (supported on secure contexts)
+  // Wipe cache, storage, and cookies for secure contexts.
   res.headers.set("Clear-Site-Data", '"cache", "storage", "cookies"');
 
   return res;

@@ -4,7 +4,6 @@ import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
-import { slugify } from "@/lib/slugify"; // <-- shared slugify import
 
 export const runtime = "nodejs";
 
@@ -44,6 +43,15 @@ const UpdateUpdateSchema = UpdateBaseSchema.partial().extend({
 const DeleteSchema = z.object({
   id: z.string().min(1),
 });
+
+function slugify(input: string) {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);

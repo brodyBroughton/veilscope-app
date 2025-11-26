@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import styles from "./AdminUpdatesClient.module.css";
-import { slugify } from "@/lib/slugify";
 
 type AdminUpdate = {
   id: string;
@@ -27,16 +26,13 @@ type FormState = {
   slug: string;
   summary: string;
   date: string;
-  image: string; // now treated as filename in the UI
+  image: string;
   imageAlt: string;
   tagsCsv: string;
   featured: boolean;
   published: boolean;
   content: string;
-  slugTouched: boolean;
 };
-
-const IMAGE_BASE_PATH = "/assets/img/updates/";
 
 function emptyFormState(): FormState {
   return {
@@ -44,56 +40,37 @@ function emptyFormState(): FormState {
     slug: "",
     summary: "",
     date: new Date().toISOString().slice(0, 10),
-    image: "", // just filename in the field
+    image: "",
     imageAlt: "",
     tagsCsv: "",
     featured: false,
     published: true,
     content: "",
-    slugTouched: false,
   };
 }
 
 function toFormState(u: AdminUpdate): FormState {
-  // For editing: show only the filename if the image uses our base path
-  const image =
-    u.image && u.image.startsWith(IMAGE_BASE_PATH)
-      ? u.image.slice(IMAGE_BASE_PATH.length)
-      : u.image;
-
   return {
     title: u.title,
     slug: u.slug,
     summary: u.summary,
     date: u.date,
-    image,
+    image: u.image,
     imageAlt: u.imageAlt,
     tagsCsv: u.tags.join(", "),
     featured: u.featured,
     published: u.published,
     content: u.content,
-    slugTouched: !!u.slug,
   };
 }
 
 function fromFormState(form: FormState) {
-  const filename = form.image.trim();
-
-  const image =
-    filename.length === 0
-      ? ""
-      : // If the admin pastes a full path or URL, respect it;
-        // otherwise, treat as filename and prefix our base path.
-        filename.startsWith("/") || filename.startsWith("http")
-      ? filename
-      : `${IMAGE_BASE_PATH}${filename}`;
-
   return {
     title: form.title,
     slug: form.slug,
     summary: form.summary,
     date: form.date,
-    image,
+    image: form.image,
     imageAlt: form.imageAlt,
     tags: form.tagsCsv
       .split(",")
@@ -136,58 +113,6 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
     setForm(emptyFormState());
     setError(null);
     setMessage(null);
-  }
-
-  // Title change: auto-generate slug unless slug was manually touched
-  function handleTitleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const newTitle = e.target.value;
-
-    setForm((prev) => {
-      const next: FormState = {
-        ...prev,
-        title: newTitle,
-        slug: prev.slugTouched ? prev.slug : slugify(newTitle),
-      };
-
-      setHasUnsavedChanges(true);
-
-      if (selectedId) {
-        const merged = fromFormState(next);
-        setUpdates((prevUpdates) =>
-          prevUpdates.map((u) =>
-            u.id === selectedId ? { ...u, ...merged } : u
-          )
-        );
-      }
-
-      return next;
-    });
-  }
-
-  // Slug change: mark as touched and normalize
-  function handleSlugChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value;
-
-    setForm((prev) => {
-      const next: FormState = {
-        ...prev,
-        slugTouched: true,
-        slug: slugify(raw),
-      };
-
-      setHasUnsavedChanges(true);
-
-      if (selectedId) {
-        const merged = fromFormState(next);
-        setUpdates((prevUpdates) =>
-          prevUpdates.map((u) =>
-            u.id === selectedId ? { ...u, ...merged } : u
-          )
-        );
-      }
-
-      return next;
-    });
   }
 
   function updateForm<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -487,7 +412,7 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
                 type="text"
                 className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 value={form.title}
-                onChange={handleTitleChange}
+                onChange={(e) => updateForm("title", e.target.value)}
                 required
                 placeholder="Enter update title"
               />
@@ -504,8 +429,8 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
                 type="text"
                 className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 value={form.slug}
-                onChange={handleSlugChange}
-                placeholder="week-3-progress-report-brody"
+                onChange={(e) => updateForm("slug", e.target.value)}
+                placeholder="url-friendly-slug"
               />
             </div>
 
@@ -554,17 +479,14 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="grid gap-2.5">
                 <label className="text-sm font-semibold text-[var(--ink)]">
-                  Hero Image Filename
-                  <span className="text-xs font-normal text-[var(--ink-2)] ml-1">
-                    (e.g. weekXname)
-                  </span>
+                  Hero Image URL
                 </label>
                 <input
                   type="text"
                   className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
                   value={form.image}
                   onChange={(e) => updateForm("image", e.target.value)}
-                  placeholder="weekXname"
+                  placeholder="/assets/img/updates/image.jpg"
                 />
               </div>
 

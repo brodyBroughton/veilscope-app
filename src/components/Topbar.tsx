@@ -15,6 +15,16 @@ interface TopbarProps {
 
 const LOGIN_PATH = "/login";
 
+// Admin navigation items shown in the profile menu for admin users only.
+const ADMIN_LINKS = [
+  {
+    href: "/admin/updates",
+    label: "Project Updates",
+  },
+  // Add more admin pages here later:
+  // { href: "/admin/users", label: "User Management" },
+];
+
 export default function Topbar({
   tabs,
   activeKey,
@@ -26,7 +36,8 @@ export default function Topbar({
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
-  
+  const [role, setRole] = useState<string | null>(null);
+
   // Refs used for outside-click detection.
   const profileRef = useRef<HTMLDivElement | null>(null);
   const avatarButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -41,9 +52,16 @@ export default function Topbar({
     setProfileOpen((o) => !o);
   };
 
-  const handleProfileSettingsClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
+  const handleProfileSettingsClick: React.MouseEventHandler<
+    HTMLAnchorElement
+  > = (e) => {
     setProfileOpen(false);
     onOpenSettings?.();
+  };
+
+  const handleAdminLinkClick: React.MouseEventHandler<HTMLAnchorElement> = () => {
+    // Just close the profile menu; navigation is handled by <Link>
+    setProfileOpen(false);
   };
 
   // Close the profile menu when clicking outside the popover.
@@ -86,8 +104,12 @@ export default function Topbar({
           return;
         }
 
-        const data = (await res.json()) as { email?: string };
-        if (mounted) setEmail(data?.email ?? null);
+        const data = (await res.json()) as { email?: string; role?: string };
+
+        if (mounted) {
+          setEmail(data?.email ?? null);
+          setRole(data?.role ?? null);
+        }
       } catch {
         window.location.replace(LOGIN_PATH);
       }
@@ -229,11 +251,28 @@ export default function Topbar({
                     className="mini-link profile-settings-btn"
                     onClick={handleProfileSettingsClick}
                   >
-                    <span className="profile-settings-icon" aria-hidden="true">
-                      ⚙️
-                    </span>
                     <span>Settings</span>
                   </Link>
+
+                  {/* Admin-only section */}
+                  {role === "admin" && ADMIN_LINKS.length > 0 && (
+                    <nav className="profile-admin-nav" aria-label="Admin">
+                      <span className="profile-admin-label">Admin</span>
+                      <ul className="profile-admin-list">
+                        {ADMIN_LINKS.map((link) => (
+                          <li key={link.href}>
+                            <Link
+                              href={link.href}
+                              className="mini-link profile-admin-link"
+                              onClick={handleAdminLinkClick}
+                            >
+                              {link.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </nav>
+                  )}
 
                   <form method="POST" action="/api/logout">
                     <button type="submit" className="mini-link signout-btn">

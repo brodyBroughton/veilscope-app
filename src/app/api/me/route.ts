@@ -16,11 +16,21 @@ const noStore: HeadersInit = {
 export async function GET() {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email;
+  const role = (session?.user as any)?.role as string | undefined;
 
   if (!email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: noStore });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: noStore }
+    );
   }
 
-  // Data minimization: only return email
-  return NextResponse.json({ email }, { headers: noStore });
+  // Return email and role (used by Topbar to show admin menu)
+  return NextResponse.json(
+    {
+      email,
+      role: role ?? null,
+    },
+    { headers: noStore }
+  );
 }

@@ -38,6 +38,7 @@ type FormState = {
 };
 
 const IMAGE_BASE_PATH = "/assets/img/updates/";
+const TAG_OPTIONS = ["Weekly Report", "Brody", "Jacob"];
 
 function emptyFormState(): FormState {
   return {
@@ -124,6 +125,12 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
   const [confirmDeleteTitle, setConfirmDeleteTitle] = useState<string>("");
   const [deleting, setDeleting] = useState(false);
 
+  // Derived tags array used by the tag pills
+  const selectedTags: string[] = form.tagsCsv
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+
   function handleSelect(update: AdminUpdate) {
     setSelectedId(update.id);
     setForm(toFormState(update));
@@ -173,6 +180,41 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
         ...prev,
         slugTouched: true,
         slug: slugify(raw),
+      };
+
+      setHasUnsavedChanges(true);
+
+      if (selectedId) {
+        const merged = fromFormState(next);
+        setUpdates((prevUpdates) =>
+          prevUpdates.map((u) =>
+            u.id === selectedId ? { ...u, ...merged } : u
+          )
+        );
+      }
+
+      return next;
+    });
+  }
+
+  // Tags: toggle a tag on/off using pill buttons
+  function toggleTag(tag: string) {
+    setForm((prev) => {
+      const currentTags = prev.tagsCsv
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      let nextTags: string[];
+      if (currentTags.includes(tag)) {
+        nextTags = currentTags.filter((t) => t !== tag);
+      } else {
+        nextTags = [...currentTags, tag];
+      }
+
+      const next: FormState = {
+        ...prev,
+        tagsCsv: nextTags.join(", "),
       };
 
       setHasUnsavedChanges(true);
@@ -535,20 +577,34 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
               />
             </div>
 
+            {/* Tags as pill buttons */}
             <div className="grid gap-2.5">
               <label className="text-sm font-semibold text-[var(--ink)]">
                 Tags{" "}
                 <span className="text-xs font-normal text-[var(--ink-2)]">
-                  (comma-separated)
+                  (click to toggle, multiple allowed)
                 </span>
               </label>
-              <input
-                type="text"
-                className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                value={form.tagsCsv}
-                onChange={(e) => updateForm("tagsCsv", e.target.value)}
-                placeholder="AI, Product, Release"
-              />
+              <div className="flex flex-wrap gap-2">
+                {TAG_OPTIONS.map((tag) => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className={[
+                        "px-3 py-1.5 rounded-full text-xs font-medium border outline-none transition-colors",
+                        isSelected
+                          ? "bg-[var(--accent)] border-[var(--accent)] text-white"
+                          : "bg-[var(--panel-2)] border-[var(--ui)] text-[var(--ink-2)] hover:border-[var(--accent)] hover:text-[var(--ink)]",
+                      ].join(" ")}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

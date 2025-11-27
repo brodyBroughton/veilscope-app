@@ -8,7 +8,6 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
-
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -17,14 +16,13 @@ model User {
   image         String?
   role          String    @default("user")
   passwordHash  String?
-  accounts      Account[]
-  sessions      Session[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
-  preferences   Json?      // <— added: user-specific preferences
-  folders       Folder[]   // <— relation to folders
-  items         Item[]     // <— relation to items
+  preferences   Json?
+  accounts      Account[]
+  folders       Folder[]
+  items         Item[]
+  sessions      Session[]
 }
 
 model Update {
@@ -33,17 +31,12 @@ model Update {
   title     String
   summary   String
   date      DateTime
-
   image     String   @default("")
   imageAlt  String   @default("")
-
   tags      String[] @default([])
-
   featured  Boolean  @default(false)
-  content   String   @db.Text
-
+  content   String
   published Boolean  @default(true)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -54,12 +47,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -82,38 +75,29 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ==== New models added for user‐specific folders/items ====
-
 model Folder {
   id        String   @id @default(cuid())
   name      String
-
-  user      User     @relation(fields: [userId], references: [id])
   userId    String
-
-  parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
   parentId  String?
-  children  Folder[] @relation("FolderToFolder")
-
-  items     Item[]
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderToFolder")
+  user      User     @relation(fields: [userId], references: [id])
+  items     Item[]
 }
 
 model Item {
   id        String   @id @default(cuid())
   title     String
   ticker    String?
-  type      String?   // e.g., "10-K", "Analysis", etc.
-
-  user      User     @relation(fields: [userId], references: [id])
+  type      String?
   userId    String
-
-  folder    Folder?  @relation(fields: [folderId], references: [id])
   folderId  String?
-
-  content   Json?     // optional: structured data or metadata
+  content   Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  folder    Folder?  @relation(fields: [folderId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }

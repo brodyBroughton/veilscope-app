@@ -35,7 +35,6 @@ export default function Drawer({
               placeholder="Search Ticker…"
               aria-label="Search ticker"
             />
-            {/* Search button removed */}
           </div>
           <div className="drawer-actions">
             <button className="mini-btn" type="button" aria-label="New Folder">

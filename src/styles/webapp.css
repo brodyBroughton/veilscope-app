@@ -278,6 +278,100 @@ html[data-theme="dark"] .logo-dark{ display:none; }
 .tree ul{ list-style:none; margin:6px 0 6px 16px; padding:0; }
 .tree a{ color: var(--ink-2); text-decoration:none; }
 .tree a:hover{ text-decoration: underline; }
+/* ===== Folder tree row + actions ===== */
+
+/* Hide the default disclosure triangle in most browsers */
+.tree details > summary::-webkit-details-marker {
+  display: none;
+}
+/* Invisible spacer when nothing is being dragged */
+.drop-zone-placeholder {
+  height: 2px;
+}
+
+/* Drop zone line between folders */
+.drop-zone {
+  height: 4px;
+  margin: 2px 0;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.drop-zone-active {
+  background: var(--accent);
+}
+
+/* Folder row layout (we already had something like this) */
+.folder-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Hover highlight so you can see which row you're over */
+.folder-summary:hover {
+  background: var(--panel-2);
+}
+
+/* Arrow indicator before the folder name */
+.tree details > summary.folder-summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1em;
+  margin-right: 2px;
+  font-size: 11px;
+  transform: translateY(1px);
+}
+
+/* When the folder is open, rotate arrow (or swap to a down-arrow) */
+.tree details[open] > summary.folder-summary::before {
+  content: "▾";
+}
+
+/* Special highlight when this folder is an active drop target */
+.folder-drop-target {
+  background: var(--panel-2);
+  outline: 1px solid var(--accent);
+}
+
+/* Empty state under Portfolio when there are no folders yet */
+.empty-state {
+  margin: 6px 0 0 4px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+/* ===== Context menu (right-click + ⋮ menu) ===== */
+
+.context-menu {
+  min-width: 160px;
+  padding: 4px;
+  background: var(--panel);
+  border-radius: 10px;
+  border: 1px solid var(--ui);
+  box-shadow: 0 16px 40px rgba(2, 8, 23, 0.45);
+  color: var(--ink);
+}
+
+.context-menu button {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.context-menu button:hover {
+  background: var(--panel-2);
+}
 
 /* ===== Workbench ===== */
 .workbench{

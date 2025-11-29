@@ -3,9 +3,22 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
+type Quote = {
+  symbol: string;
+  price: number;
+  change: number;
+  changePct: number;
+  high: number;
+  low: number;
+  open: number;
+  prevClose: number;
+  asOf: string;
+};
+
 interface TopbarProps {
   onToggleDrawer: () => void;
   onOpenSettings: () => void;
+  activeTicker?: string | null;
 }
 
 const LOGIN_PATH = "/login";
@@ -16,20 +29,19 @@ const ADMIN_LINKS = [
     href: "/admin/updates",
     label: "Project Updates",
   },
-  // Add more admin pages here later:
-  // { href: "/admin/users", label: "User Management" },
 ];
 
 export default function Topbar({
   onToggleDrawer,
   onOpenSettings,
+  activeTicker,
 }: TopbarProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [quote, setQuote] = useState<Quote | null>(null);
 
-  // Refs used for outside-click detection.
   const profileRef = useRef<HTMLDivElement | null>(null);
   const avatarButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -54,7 +66,6 @@ export default function Topbar({
   };
 
   const handleAdminLinkClick: React.MouseEventHandler<HTMLAnchorElement> = () => {
-    // Just close the profile menu; navigation is handled by <Link>
     setProfileOpen(false);
   };
 
@@ -102,6 +113,7 @@ export default function Topbar({
     };
   }, [notifOpen]);
 
+  // Fetch user info
   useEffect(() => {
     let mounted = true;
 
@@ -136,6 +148,54 @@ export default function Topbar({
     };
   }, []);
 
+  useEffect(() => {
+  if (!activeTicker) {
+    setQuote(null);
+    return;
+  }
+
+  let cancelled = false;
+  let intervalId: ReturnType<typeof setInterval> | null = null;
+
+  const fetchQuote = async () => {
+    try {
+      const res = await fetch(
+        `/api/quote?symbol=${encodeURIComponent(activeTicker)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) {
+        if (!cancelled) setQuote(null);
+        return;
+      }
+
+      const data = (await res.json()) as Quote;
+      if (!cancelled) {
+        setQuote(data);
+      }
+    } catch {
+      if (!cancelled) {
+        setQuote(null);
+      }
+    }
+  };
+
+  // initial fetch
+  fetchQuote();
+
+  // poll every 10s
+  intervalId = setInterval(fetchQuote, 10_000);
+
+  return () => {
+    cancelled = true;
+    if (intervalId) clearInterval(intervalId);
+  };
+}, [activeTicker]);
+
+
   return (
     <header className="app-topbar" role="banner">
       {/* Left: menu + logo */}
@@ -169,8 +229,27 @@ export default function Topbar({
         </a>
       </div>
 
-      {/* Center column empty (keeps layout: left brand, right actions) */}
-      <div />
+      {/* Center: stock strip (desktop only via CSS) */}
+      <div className="topbar-center" aria-live="polite">
+        {activeTicker && quote && (
+          <div className="stock-pill">
+            <span className="stock-symbol">{quote.symbol}</span>
+            <span className="stock-dot">•</span>
+            <span className="stock-price">
+              ${quote.price.toFixed(2)}
+            </span>
+            <span
+              className={`stock-change ${
+                quote.changePct >= 0 ? "pos" : "neg"
+              }`}
+            >
+              {quote.changePct >= 0 ? "+" : ""}
+              {quote.changePct.toFixed(2)}%
+            </span>
+            <span className="stock-caption">with live analytics</span>
+          </div>
+        )}
+      </div>
 
       {/* Right: notifications + profile */}
       <div className="topbar-actions">
@@ -255,7 +334,6 @@ export default function Topbar({
                     <span>Settings</span>
                   </Link>
 
-                  {/* Admin-only section */}
                   {role === "admin" && ADMIN_LINKS.length > 0 && (
                     <nav className="profile-admin-nav" aria-label="Admin">
                       <span className="profile-admin-label">Admin</span>

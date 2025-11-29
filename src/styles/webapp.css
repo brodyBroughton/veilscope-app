@@ -140,6 +140,65 @@ html[data-theme="system"] .logo-dark{ display:inline; }
 html[data-theme="dark"] .logo-light{ display:inline; }
 html[data-theme="dark"] .logo-dark{ display:none; }
 
+/* Center stock strip in the topbar */
+.topbar-center {
+  display: none; /* hidden on mobile by default */
+}
+
+/* Desktop-only display */
+@media (min-width: 992px) {
+  .topbar-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none; /* don't block clicks on the right cluster */
+  }
+}
+
+/* Stock pill styling */
+.stock-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ui);
+  background: linear-gradient(135deg, var(--panel-2), var(--panel));
+  font-size: 13px;
+  color: var(--ink);
+  pointer-events: auto;
+}
+
+.stock-symbol {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 11px;
+  opacity: 0.95;
+}
+
+.stock-dot {
+  opacity: 0.6;
+}
+
+.stock-price,
+.stock-change {
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-change.pos {
+  color: var(--good);
+}
+
+.stock-change.neg {
+  color: var(--bad);
+}
+
+.stock-caption {
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
 /* ===== Popovers (notifications/profile) ===== */
 .popover[hidden]{ display:none; }
 .popover{
@@ -260,6 +319,40 @@ html[data-theme="dark"] .logo-dark{ display:none; }
 .tree a:hover{ text-decoration: underline; }
 .tree details > summary::-webkit-details-marker {
   display: none;
+}
+
+.drawer-item-btn {
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.drawer-item-btn:hover {
+  background: var(--panel-2);
+}
+
+.drawer-item-btn[aria-current="page"] {
+  background: var(--panel-2);
+  border-left: 2px solid var(--accent);
+  padding-left: 6px;
+}
+
+.drawer-item-name {
+  font-weight: 600;
+}
+
+.drawer-item-meta {
+  font-size: 11px;
+  color: var(--ink-2);
 }
 
 /* ===== Workbench ===== */

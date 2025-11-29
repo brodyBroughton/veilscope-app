@@ -1,17 +1,68 @@
 export type Severity = "good" | "medium" | "bad";
-export interface Factor { label: string; text: string; sev: Severity }
-export interface Company { name: string; desc: string; score: number | null; factors: Factor[] }
+
+export interface Factor {
+  label: string;
+  text: string;
+  sev: Severity;
+}
+
+export interface Company {
+  name: string;
+  desc: string;
+  score: number | null;
+  factors: Factor[];
+  ticker: string;        // 🔹 NEW: link to live quote
+}
+
 export type DataMap = Record<string, Company>;
 
-export const DATA: DataMap = {                                    // change score to see sample  V
-  SAMPLE: { name: "Sample Company", desc: "Demonstration scorecard for layout preview.", score: null,
+export const DATA: DataMap = {
+  // Company WITH data (Apple as a demo)
+  ALPHA: {
+    name: "Apple Inc.",
+    desc: "Large-cap technology company with diversified hardware, software, and services revenue.",
+    ticker: "AAPL",
+    score: 82,
     factors: [
-      { label: "Market dynamics", text: "Mixed trends across segments.", sev: "medium" },
-      { label: "Customer concentration", text: "Top clients >30% of revenue.", sev: "bad" },
-      { label: "Cash runway", text: "12–18 months projected.", sev: "good" },
-      { label: "Leadership turnover", text: "Recent changes introduce uncertainty.", sev: "medium" },
-      { label: "Debt covenants", text: "No near-term breaches expected.", sev: "good" },
-      { label: "Supply dependencies", text: "Single-source components.", sev: "bad" },
-      { label: "Product maturity", text: "Early-stage adoption.", sev: "medium" }
-    ]}
+      {
+        label: "Revenue quality",
+        text: "High mix of recurring services and ecosystem-driven hardware demand.",
+        sev: "good",
+      },
+      {
+        label: "Customer concentration",
+        text: "Large, diversified customer base with no single-customer dependency.",
+        sev: "good",
+      },
+      {
+        label: "Profitability",
+        text: "Sustained high margins and strong free cash flow generation.",
+        sev: "good",
+      },
+      {
+        label: "Regulatory exposure",
+        text: "Ongoing antitrust and platform regulation scrutiny in multiple regions.",
+        sev: "medium",
+      },
+      {
+        label: "Leverage",
+        text: "Net cash position with active capital return program.",
+        sev: "good",
+      },
+      {
+        label: "Execution risk",
+        text: "Execution risk around new product categories and ecosystem expansion.",
+        sev: "medium",
+      },
+    ],
+  },
+
+  // Company with NO analysis yet (will show the “Run analysis” empty state)
+  NODATA: {
+    name: "Horizon Biotech Labs",
+    desc: "Pre-revenue biotech platform focused on early-stage oncology assets.",
+    ticker: "Not a real ticker", // real ticker (Vertex Pharmaceuticals) for demo API usage
+    score: null,
+    factors: [], // no factors → hasAnalysis = false
+  },
 };

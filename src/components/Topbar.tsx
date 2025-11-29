@@ -2,13 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import type { Tab } from "@/types/ui";
 
 interface TopbarProps {
-  tabs: Tab[];
-  activeKey: string;
-  onActivate: (key: string) => void;
-  onClose: (key: string) => void;
   onToggleDrawer: () => void;
   onOpenSettings: () => void;
 }
@@ -26,10 +21,6 @@ const ADMIN_LINKS = [
 ];
 
 export default function Topbar({
-  tabs,
-  activeKey,
-  onActivate,
-  onClose,
   onToggleDrawer,
   onOpenSettings,
 }: TopbarProps) {
@@ -41,6 +32,9 @@ export default function Topbar({
   // Refs used for outside-click detection.
   const profileRef = useRef<HTMLDivElement | null>(null);
   const avatarButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const notifRef = useRef<HTMLDivElement | null>(null);
+  const notifButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const handleNotificationsClick = () => {
     setProfileOpen(false);
@@ -64,7 +58,7 @@ export default function Topbar({
     setProfileOpen(false);
   };
 
-  // Close the profile menu when clicking outside the popover.
+  // Close the profile menu when clicking outside the profile popover/avatar.
   useEffect(() => {
     if (!profileOpen) return;
 
@@ -85,6 +79,28 @@ export default function Topbar({
       document.removeEventListener("mousedown", handleDocumentClick);
     };
   }, [profileOpen]);
+
+  // Close the notifications popover when clicking outside the bell / popover.
+  useEffect(() => {
+    if (!notifOpen) return;
+
+    const handleDocumentClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(target) &&
+        notifButtonRef.current &&
+        !notifButtonRef.current.contains(target)
+      ) {
+        setNotifOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleDocumentClick);
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+    };
+  }, [notifOpen]);
 
   useEffect(() => {
     let mounted = true;
@@ -122,6 +138,7 @@ export default function Topbar({
 
   return (
     <header className="app-topbar" role="banner">
+      {/* Left: menu + logo */}
       <div className="topbar-left">
         <button
           className="icon-btn menu-btn"
@@ -152,35 +169,14 @@ export default function Topbar({
         </a>
       </div>
 
-      <div className="tabbar" role="tablist" aria-label="Open items">
-        {tabs.map((t) => (
-          <div
-            key={t.key}
-            className={`tabitem ${activeKey === t.key ? "is-active" : ""}`}
-          >
-            <button
-              role="tab"
-              aria-selected={activeKey === t.key}
-              className={`tab ${activeKey === t.key ? "is-active" : ""}`}
-              onClick={() => onActivate(t.key)}
-            >
-              {t.label}
-            </button>
-            <button
-              className="tab-close"
-              aria-label={`Close ${t.label}`}
-              title="Close"
-              onClick={() => onClose(t.key)}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
+      {/* Center column empty (keeps layout: left brand, right actions) */}
+      <div />
 
+      {/* Right: notifications + profile */}
       <div className="topbar-actions">
         <span className="action">
           <button
+            ref={notifButtonRef}
             className="icon-btn"
             aria-label="Open notifications"
             aria-expanded={notifOpen}
@@ -197,12 +193,17 @@ export default function Topbar({
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <path d="M6.5 8a5.5 5.5 0 0 1 11 0c0 1.9.5 3.2 1.1 4.2.4.7.9 1.4 .9 2.3v.5H4v-.5c0-.9.5-1.6 .9-2.3C6 11.2 6.5 9.9 6.5 8z" />
+              <path d="M6.5 8a5.5 5.5 0 0 1 11 0c0 1.9.5 3.2 1.1 4.2.4.7.9 1.4.9 2.3v.5H4v-.5c0-.9.5-1.6.9-2.3C6 11.2 6.5 9.9 6.5 8z" />
               <path d="M14 19a2 2 0 0 1-4 0" />
             </svg>
           </button>
           {notifOpen && (
-            <div className="popover" role="dialog" aria-label="Notifications">
+            <div
+              ref={notifRef}
+              className="popover"
+              role="dialog"
+              aria-label="Notifications"
+            >
               <div className="popover-card">
                 <strong>Notifications</strong>
                 <p>No new notifications.</p>

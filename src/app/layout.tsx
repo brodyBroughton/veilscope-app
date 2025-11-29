@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-theme="system">
-      {/* Preserve the existing app shell styling; the login overlay renders above it. */}
-      <body className="webapp">{children}</body>
+      {/* Body is now just a simple root container; the .webapp layout lives on the inner shell */}
+      <body className="app-root">{children}</body>
     </html>
   );
 }

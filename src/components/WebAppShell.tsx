@@ -15,7 +15,7 @@ export default function WebAppShell() {
   const defaultKey = "SAMPLE";
 
   return (
-    <div className={`webapp ${!drawerOpen ? "drawer-closed" : ""}`}>
+    <div className={`webapp ${drawerOpen ? "drawer-open" : "drawer-closed"}`}>
       <Topbar
         onToggleDrawer={() => setDrawerOpen((open) => !open)}
         onOpenSettings={() => {

@@ -35,16 +35,7 @@ export default function Drawer({ open, onClose }: DrawerProps) {
               aria-label="Search ticker"
             />
           </div>
-          <div className="drawer-actions">
-            <button className="mini-btn" type="button" aria-label="New Analysis">
-              New Analysis
-            </button>
-          </div>
         </div>
-
-        {/* Portfolio tree removed */}
-        {/* You can add future nav content here if you want */}
-        {/* <nav className="tree" aria-label="Saved items"></nav> */}
       </aside>
     </>
   );

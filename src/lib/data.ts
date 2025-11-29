@@ -11,7 +11,7 @@ export interface Company {
   desc: string;
   score: number | null;
   factors: Factor[];
-  ticker: string;        // 🔹 NEW: link to live quote
+  ticker: string;
 }
 
 export type DataMap = Record<string, Company>;
@@ -58,11 +58,11 @@ export const DATA: DataMap = {
   },
 
   // Company with NO analysis yet (will show the “Run analysis” empty state)
-  NODATA: {
+  NONEXISTENT: {
     name: "Horizon Biotech Labs",
     desc: "Pre-revenue biotech platform focused on early-stage oncology assets.",
-    ticker: "Not a real ticker", // real ticker (Vertex Pharmaceuticals) for demo API usage
+    ticker: "AAPL",
     score: null,
     factors: [], // no factors → hasAnalysis = false
-  },
+  }
 };

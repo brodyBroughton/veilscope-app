@@ -120,11 +120,17 @@ body.app-root{
   display:block;
 }
 
-/* Avatar */
+/* Avatar (topbar button) */
 .avatar{
-  width: 32px; height: 32px; border-radius: 999px;
-  border: 2px solid var(--ui);
-  background: linear-gradient(180deg,#A0AEC0,#718096);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
   cursor: pointer;
 }
 
@@ -220,13 +226,22 @@ html[data-theme="dark"] .logo-dark{ display:none; }
 }
 .popover-card strong{ display:block; margin: 2px 0 6px; }
 .profile-card{ display:flex; gap:10px; align-items:flex-start; }
+
+/* Avatar image – small in topbar, larger in profile card */
 .profile-photo{
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   border:1px solid var(--ui);
   flex:0 0 auto;
+  object-fit: cover;
 }
+
+.profile-card .profile-photo{
+  width: 72px;
+  height: 72px;
+}
+
 .profile-meta{
   display:flex;
   flex-direction:column;
@@ -409,6 +424,58 @@ html[data-theme="dark"] .logo-dark{ display:none; }
   text-align:center;
   font-weight:800;
 }
+
+/* Live analytics card above charts */
+.live-analytics {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--ui);
+}
+
+.live-analytics-grid {
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.live-analytics-grid .metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.live-analytics-grid dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.live-analytics-grid dd {
+  margin: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.live-analytics-grid dd.pos {
+  color: var(--good);
+}
+
+.live-analytics-grid dd.neg {
+  color: var(--bad);
+}
+
+.live-analytics-empty {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
 .skeleton.chart{
   height: 180px;
   border-radius: 12px;

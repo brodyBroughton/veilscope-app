@@ -1,0 +1,639 @@
+/* src/app/settings/SettingsClient.module.css */
+
+.settingsPage {
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+}
+
+.settingsShell {
+  width: 100%;
+  max-width: 1040px;
+}
+
+/* Page header */
+
+.pageHeader h1 {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--ink, #e5e7eb);
+}
+
+.pageHeader p {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--ink-2, #9ca3af);
+}
+
+/* Layout: sidebar + content */
+
+.settingsLayout {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+/* Sidebar */
+
+.sidebar {
+  align-self: flex-start;
+  padding: 0.75rem;
+  border-radius: 18px;
+  background: var(--panel, #020617);
+  border: 1px solid var(--ui, #111827);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebarItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  border: none;
+  background: transparent;
+  color: var(--ink-2, #9ca3af);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.sidebarItem:hover {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--ink, #e5e7eb);
+}
+
+.sidebarItemActive {
+  background: radial-gradient(circle at 0 0, rgba(236, 72, 153, 0.18), transparent),
+    rgba(15, 23, 42, 0.95);
+  color: var(--ink, #f9fafb);
+  box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.6);
+}
+
+/* Content pane */
+
+.contentPane {
+  padding: 1rem;
+  border-radius: 18px;
+  background: var(--panel, #020617);
+  border: 1px solid var(--ui, #111827);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.7);
+}
+
+/* Section */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sectionHeader h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink, #e5e7eb);
+}
+
+.sectionHeader p {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--ink-2, #9ca3af);
+}
+
+.sectionForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sectionBanner {
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  color: #bbf7d0;
+}
+
+/* Avatar */
+
+.avatarRow {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.avatarWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: radial-gradient(circle at 0 0, #111827, #020617);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.avatarMeta {
+  flex: 1;
+}
+
+.avatarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+/* Fields */
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.inputLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink, #e5e7eb);
+}
+
+.required {
+  margin-left: 0.15rem;
+  color: #f97373;
+}
+
+.textInput {
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--ui, #111827);
+  background: var(--panel-2, #020617);
+  padding: 0 0.9rem;
+  font-size: 0.85rem;
+  color: var(--ink, #e5e7eb);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.textInput:focus {
+  border-color: var(--accent, #ec4899);
+  box-shadow: 0 0 0 1px var(--accent, #ec4899);
+}
+
+.textInputReadonly {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.muted {
+  font-size: 0.8rem;
+  color: var(--ink-2, #9ca3af);
+}
+
+/* Checkbox label */
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--ink, #e5e7eb);
+}
+
+/* Actions */
+
+.actionsRow {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Buttons */
+
+.buttonPrimary {
+  border-radius: 999px;
+  padding: 0.5rem 1.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(90deg, #ec4899, #a855f7);
+  color: #f9fafb;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.7);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
+}
+
+.buttonPrimary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.buttonPrimary:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.9);
+}
+
+.buttonSecondary {
+  border-radius: 999px;
+  padding: 0.45rem 1.1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid var(--ui, #111827);
+  background: var(--panel-2, #020617);
+  color: var(--ink, #e5e7eb);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.buttonSecondary:hover {
+  border-color: var(--accent, #ec4899);
+}
+
+.buttonGhost {
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.8rem;
+  border: none;
+  background: transparent;
+  color: var(--ink-2, #9ca3af);
+  cursor: pointer;
+}
+
+.buttonGhost:hover {
+  color: var(--ink, #e5e7eb);
+}
+
+.buttonDanger {
+  border-radius: 999px;
+  padding: 0.45rem 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid rgba(248, 113, 113, 0.7);
+  background: rgba(127, 29, 29, 0.9);
+  color: #fecaca;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.buttonDanger:hover {
+  background: rgba(185, 28, 28, 1);
+}
+
+/* Segmented control (theme) */
+
+.segmentedControl {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--panel-2, #020617);
+  border: 1px solid var(--ui, #111827);
+}
+
+.segmentedOption {
+  border-radius: 999px;
+  padding: 0.25rem 0.9rem;
+  font-size: 0.8rem;
+  border: none;
+  background: transparent;
+  color: var(--ink-2, #9ca3af);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.segmentedOptionActive {
+  background: radial-gradient(circle at 0 0, rgba(236, 72, 153, 0.24), transparent);
+  color: var(--ink, #f9fafb);
+}
+
+/* Billing cards */
+
+.cardRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  background: var(--panel-2, #020617);
+  border: 1px solid var(--ui, #111827);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cardTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink, #e5e7eb);
+}
+
+.billingEmail {
+  font-size: 0.9rem;
+  color: var(--ink, #e5e7eb);
+  font-weight: 500;
+}
+
+/* Danger zone */
+
+.dangerZone {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dangerZone h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fecaca;
+}
+
+.dangerZone p {
+  font-size: 0.8rem;
+  color: var(--ink-2, #9ca3af);
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .settingsLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sidebarItem {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .settingsPage {
+    padding: 16px;
+  }
+
+  .contentPane {
+    padding: 0.85rem;
+  }
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.pageHeaderMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.backButton {
+  border-radius: 999px;
+  border: 1px solid var(--ui);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.backButton:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .backButton {
+    margin-top: 8px;
+  }
+}
+
+/* Branded confirm modal for avatar removal */
+.confirmBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 24, 36, 0.65); /* on-brand dark overlay */
+  backdrop-filter: blur(4px);
+}
+
+.confirmModal {
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 16px;
+  border: 1px solid var(--ui);
+  box-shadow: 0 20px 70px rgba(2, 8, 23, 0.6);
+  padding: 18px 20px 16px;
+  width: min(90vw, 360px);
+}
+
+.confirmTitle {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.confirmBody {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Back-to-app row */
+.settingsBackRow {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0 12px;
+}
+
+.backToAppButton {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--ui);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.45);
+  transition: border-color 0.15s ease, transform 0.1s ease,
+    box-shadow 0.1s ease, background 0.15s ease;
+}
+
+.backToAppButton:hover {
+  border-color: var(--accent);
+  background: radial-gradient(
+      circle at top left,
+      rgba(236, 72, 153, 0.18),
+      transparent 55%
+    ),
+    var(--panel);
+}
+
+.backToAppButton:active {
+  transform: translateY(1px);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.5);
+}
+
+/* Inline avatar remove confirm panel */
+.avatarRemoveConfirm {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: radial-gradient(
+      circle at top left,
+      rgba(236, 72, 153, 0.18),
+      transparent 55%
+    ),
+    var(--panel-2);
+  border: 1px solid rgba(236, 72, 153, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.avatarRemoveConfirmTitle {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.avatarRemoveConfirmBody {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.avatarRemoveConfirmActions {
+  margin-top: 6px;
+  display: flex;
+  gap: 10px;
+}
+
+/* Optional: error banner variant */
+.sectionBannerError {
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+  color: #fecaca;
+}
+
+/* Mobile tweak: align back button left */
+@media (max-width: 768px) {
+  .settingsBackRow {
+    justify-content: flex-start;
+    padding-top: 12px;
+  }
+}
+
+.themePillGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  background: var(--panel-2);
+  border: 1px solid var(--ui, rgba(255, 255, 255, 0.06));
+  width: fit-content;
+}
+
+
+.themePill {
+  border: none;
+  border-radius: 9999px;
+  padding: 0.4rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: transparent;
+  color: var(--ink-2, rgba(255, 255, 255, 0.6));
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    transform 80ms ease;
+}
+
+.themePill:not(.themePillActive):hover {
+  background: var(--panel-3, rgba(255, 255, 255, 0.03));
+  color: var(--ink, #fff);
+}
+
+.themePillActive {
+  background: linear-gradient(
+    135deg,
+    #ff4b9a,
+    #a855f7
+  );
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 10px 25px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.themePillActive:hover {
+  transform: translateY(-1px);
+}

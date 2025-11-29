@@ -122,7 +122,7 @@
 
 .listItemButton {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start; /* was space-between */
   align-items: center;
   flex: 1;
   text-align: left;
@@ -133,6 +133,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
 }
+
 
 .listItemButton:hover {
   background: var(--panel);

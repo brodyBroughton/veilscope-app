@@ -441,65 +441,70 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
           </div>
         </div>
       </header>
-
       <div className={styles.gridTwoCols}>
         {/* Left: list */}
         <section className={styles.listSection}>
           <div className={styles.listSectionHeader}>
-            <h2 className="text-base font-bold">Existing Updates</h2>
-            <button
-              type="button"
-              onClick={handleNew}
-              className="text-sm font-semibold text-[var(--accent)] hover:underline transition-all"
-            >
-              + New Update
-            </button>
+        <h2 className="text-base font-bold">Existing Updates</h2>
+        <button
+          type="button"
+          onClick={handleNew}
+          className="text-sm font-semibold text-[var(--accent)] hover:underline transition-all"
+        >
+          + New Update
+        </button>
           </div>
 
           {updates.length === 0 ? (
-            <p className="text-sm text-[var(--ink-2)] py-4 text-center">
-              No updates yet. Create your first one!
-            </p>
+        <p className="text-sm text-[var(--ink-2)] py-4 text-center">
+          No updates yet. Create your first one!
+        </p>
           ) : (
-            <ul className={styles.listItems}>
-              {updates.map((u) => (
-                <li key={u.id} className={styles.listItemRow}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelect(u)}
-                    className={`${styles.listItemButton} ${
-                      selectedId === u.id ? styles.listItemSelected : ""
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate font-medium">{u.title}</div>
-                      <div className="text-xs text-[var(--ink-2)] mt-0.5">
-                        {u.date} · {u.slug}
-                      </div>
-                    </div>
-                    <div className="flex gap-1.5 text-xs flex-shrink-0 ml-2">
-                      {u.featured && (
-                        <span className="rounded-full bg-yellow-500/10 px-2 py-1 text-yellow-400 font-medium">
-                          Featured
-                        </span>
-                      )}
-                      {!u.published && (
-                        <span className="rounded-full bg-gray-500/10 px-2 py-1 text-gray-400 font-medium">
-                          Draft
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.deleteButton}
-                    onClick={() => handleDeleteClick(u)}
-                  >
-                    Delete
-                  </button>
-                </li>
-              ))}
-            </ul>
+        <ul className={styles.listItems}>
+  {updates.map((u) => (
+    <li key={u.id} className={styles.listItemRow}>
+      <button
+        type="button"
+        onClick={() => handleSelect(u)}
+        className={`${styles.listItemButton} ${
+          selectedId === u.id ? styles.listItemSelected : ""
+        }`}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="truncate font-medium">{u.title}</div>
+
+          <div className="text-xs text-[var(--ink-2)] mt-0.5">
+            {u.date} · {u.slug}
+          </div>
+
+          {(u.featured || !u.published) && (
+            <div className="mt-1 flex flex-wrap gap-1.5 text-xs">
+              {u.featured && (
+                <span className="rounded-full bg-yellow-500/10 px-2 py-0.5 text-[0.7rem] text-yellow-400 font-medium whitespace-nowrap">
+                  Featured
+                </span>
+              )}
+
+              {!u.published && (
+                <span className="rounded-full bg-gray-500/10 px-2 py-0.5 text-[0.7rem] text-gray-300 font-medium whitespace-nowrap">
+                  Draft
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </button>
+
+      <button
+        type="button"
+        className={styles.deleteButton}
+        onClick={() => handleDeleteClick(u)}
+      >
+        Delete
+      </button>
+    </li>
+  ))}
+</ul>
           )}
         </section>
 

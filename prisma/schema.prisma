@@ -23,6 +23,7 @@ model User {
   folders       Folder[]
   items         Item[]
   sessions      Session[]
+  passwordResets PasswordReset[]
 }
 
 model Update {
@@ -108,4 +109,20 @@ model Item {
 
   folder     Folder?  @relation(fields: [folderId], references: [id])
   user       User     @relation(fields: [userId], references: [id])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  code      String   // 6-digit code
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, code])
+  @@index([expiresAt])
 }

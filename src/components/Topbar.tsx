@@ -1,3 +1,4 @@
+// src/components/Topbar.tsx
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -19,11 +20,11 @@ interface TopbarProps {
   onToggleDrawer: () => void;
   onOpenSettings: () => void;
   activeTicker?: string | null;
+  showMenuButton?: boolean; // NEW – optional, default true
 }
 
 const LOGIN_PATH = "/login";
 
-// Admin navigation items shown in the profile menu for admin users only.
 const ADMIN_LINKS = [
   {
     href: "/admin/updates",
@@ -35,11 +36,14 @@ export default function Topbar({
   onToggleDrawer,
   onOpenSettings,
   activeTicker,
+  showMenuButton = true,
 }: TopbarProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
 
   const profileRef = useRef<HTMLDivElement | null>(null);
@@ -60,7 +64,7 @@ export default function Topbar({
 
   const handleProfileSettingsClick: React.MouseEventHandler<
     HTMLAnchorElement
-  > = (e) => {
+  > = () => {
     setProfileOpen(false);
     onOpenSettings?.();
   };
@@ -113,7 +117,7 @@ export default function Topbar({
     };
   }, [notifOpen]);
 
-  // Fetch user info
+    // Fetch user info (email, role, avatar image from DB)
   useEffect(() => {
     let mounted = true;
 
@@ -132,11 +136,18 @@ export default function Topbar({
           return;
         }
 
-        const data = (await res.json()) as { email?: string; role?: string };
+        const data = (await res.json()) as {
+          email?: string;
+          role?: string | null;
+          image?: string | null;
+          name?: string | null;
+        };
 
         if (mounted) {
           setEmail(data?.email ?? null);
           setRole(data?.role ?? null);
+          setAvatarUrl(data?.image ?? null);
+          setName(data?.name ?? null); // NEW
         }
       } catch {
         window.location.replace(LOGIN_PATH);
@@ -148,73 +159,73 @@ export default function Topbar({
     };
   }, []);
 
+
+  // Poll quote for activeTicker every 10s
   useEffect(() => {
-  if (!activeTicker) {
-    setQuote(null);
-    return;
-  }
-
-  let cancelled = false;
-  let intervalId: ReturnType<typeof setInterval> | null = null;
-
-  const fetchQuote = async () => {
-    try {
-      const res = await fetch(
-        `/api/quote?symbol=${encodeURIComponent(activeTicker)}`,
-        {
-          method: "GET",
-          cache: "no-store",
-        }
-      );
-
-      if (!res.ok) {
-        if (!cancelled) setQuote(null);
-        return;
-      }
-
-      const data = (await res.json()) as Quote;
-      if (!cancelled) {
-        setQuote(data);
-      }
-    } catch {
-      if (!cancelled) {
-        setQuote(null);
-      }
+    if (!activeTicker) {
+      setQuote(null);
+      return;
     }
-  };
 
-  // initial fetch
-  fetchQuote();
+    let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
-  // poll every 10s
-  intervalId = setInterval(fetchQuote, 10_000);
+    const fetchQuote = async () => {
+      try {
+        const res = await fetch(
+          `/api/quote?symbol=${encodeURIComponent(activeTicker)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
 
-  return () => {
-    cancelled = true;
-    if (intervalId) clearInterval(intervalId);
-  };
-}, [activeTicker]);
+        if (!res.ok) {
+          if (!cancelled) setQuote(null);
+          return;
+        }
 
+        const data = (await res.json()) as Quote;
+        if (!cancelled) {
+          setQuote(data);
+        }
+      } catch {
+        if (!cancelled) {
+          setQuote(null);
+        }
+      }
+    };
+
+    fetchQuote();
+    intervalId = setInterval(fetchQuote, 10_000);
+
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [activeTicker]);
 
   return (
     <header className="app-topbar" role="banner">
       {/* Left: menu + logo */}
       <div className="topbar-left">
-        <button
-          className="icon-btn menu-btn"
-          aria-label="Open navigation"
-          onClick={onToggleDrawer}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M3 6h18M3 12h18M3 18h18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
+        {showMenuButton && (
+          <button
+            className="icon-btn menu-btn"
+            aria-label="Open navigation"
+            onClick={onToggleDrawer}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M3 6h18M3 12h18M3 18h18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        )}
         <a className="app-brand" href="/" aria-label="Veilscope">
           <img
             className="logo logo-dark"
@@ -235,9 +246,7 @@ export default function Topbar({
           <div className="stock-pill">
             <span className="stock-symbol">{quote.symbol}</span>
             <span className="stock-dot">•</span>
-            <span className="stock-price">
-              ${quote.price.toFixed(2)}
-            </span>
+            <span className="stock-price">${quote.price.toFixed(2)}</span>
             <span
               className={`stock-change ${
                 quote.changePct >= 0 ? "pos" : "neg"
@@ -246,7 +255,6 @@ export default function Topbar({
               {quote.changePct >= 0 ? "+" : ""}
               {quote.changePct.toFixed(2)}%
             </span>
-            <span className="stock-caption">with live analytics</span>
           </div>
         )}
       </div>
@@ -305,7 +313,7 @@ export default function Topbar({
           >
             <img
               className="profile-photo"
-              src="https://placehold.co/32x32"
+              src={avatarUrl ?? "https://placehold.co/32x32"}
               alt="User avatar"
             />
           </button>
@@ -319,11 +327,11 @@ export default function Topbar({
               <div className="popover-card profile-card">
                 <img
                   className="profile-photo"
-                  src="https://placehold.co/96x96"
-                  alt=""
+                  src={avatarUrl ?? "https://placehold.co/96x96"}
+                  alt="User avatar"
                 />
                 <div className="profile-meta">
-                  <strong>{email ?? "Loading…"}</strong>
+                  <strong>{name || email || "Loading…"}</strong>
                   <span className="profile-email">{email ?? ""}</span>
 
                   <Link

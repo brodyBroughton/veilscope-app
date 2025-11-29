@@ -1,6 +1,8 @@
+// src/app/api/me/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
+import { PrismaClient } from "@prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,10 +15,21 @@ const noStore: HeadersInit = {
   "Vercel-CDN-Cache-Control": "no-store",
 };
 
+const globalForPrisma = global as unknown as { prisma?: PrismaClient };
+
+const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: ["error", "warn"],
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email;
-  const role = (session?.user as any)?.role as string | undefined;
 
   if (!email) {
     return NextResponse.json(
@@ -25,12 +38,23 @@ export async function GET() {
     );
   }
 
-  // Return email and role (used by Topbar to show admin menu)
-  return NextResponse.json(
-    {
-      email,
-      role: role ?? null,
+  // Fetch user from DB so we can get name + image + role
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: {
+      email: true,
+      name: true,
+      image: true,
+      role: true, // if you have this column; otherwise remove
     },
-    { headers: noStore }
-  );
+  });
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "User not found" },
+      { status: 404, headers: noStore }
+    );
+  }
+
+  return NextResponse.json(user, { headers: noStore });
 }

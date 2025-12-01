@@ -617,7 +617,7 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
                 <label className="text-sm font-semibold text-[var(--ink)]">
                   Hero Image Filename
                   <span className="text-xs font-normal text-[var(--ink-2)] ml-1">
-                    (e.g. hero-update.png)
+                    (e.g. weekXname)
                   </span>
                 </label>
                 <input
@@ -625,7 +625,7 @@ export default function AdminUpdatesClient({ initialUpdates }: Props) {
                   className="h-11 rounded-lg border border-[var(--ui)] bg-[var(--panel-2)] px-3.5 text-sm text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
                   value={form.image}
                   onChange={(e) => updateForm("image", e.target.value)}
-                  placeholder="hero-update.png"
+                  placeholder="weekXname"
                 />
               </div>
 

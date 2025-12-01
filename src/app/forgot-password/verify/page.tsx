@@ -2,11 +2,16 @@
 import VerifyResetClient from "./VerifyResetClient";
 
 type VerifyResetPageProps = {
-  searchParams: { [key: string]: string | string[] | undefined };
+  // In this Next.js version, searchParams is a Promise-like
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-export default function VerifyResetPage({ searchParams }: VerifyResetPageProps) {
-  const rawEmail = searchParams.email;
+export default async function VerifyResetPage({
+  searchParams,
+}: VerifyResetPageProps) {
+  const sp = await searchParams; // ✅ unwrap the Promise
+
+  const rawEmail = sp.email;
   const initialEmail =
     typeof rawEmail === "string"
       ? rawEmail

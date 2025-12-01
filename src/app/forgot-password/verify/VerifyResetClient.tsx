@@ -8,16 +8,25 @@ type VerifyResetClientProps = {
   initialEmail: string;
 };
 
-export default function VerifyResetClient({ initialEmail }: VerifyResetClientProps) {
+export default function VerifyResetClient({
+  initialEmail,
+}: VerifyResetClientProps) {
   const router = useRouter();
 
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // show/hide toggles
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const emailIsLocked = Boolean(initialEmail);
 
   const handleSubmit: React.FormEventHandler = async (e) => {
     e.preventDefault();
@@ -84,6 +93,7 @@ export default function VerifyResetClient({ initialEmail }: VerifyResetClientPro
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email (locked if initialEmail is present) */}
           <div>
             <label className="block text-sm font-medium mb-1">
               Email address
@@ -93,12 +103,19 @@ export default function VerifyResetClient({ initialEmail }: VerifyResetClientPro
               required
               autoComplete="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-11 rounded-lg border border-[var(--ui,#1e293b)] bg-[var(--panel-2,#020617)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent,#ec4899)]"
+              onChange={
+                emailIsLocked ? undefined : (e) => setEmail(e.target.value)
+              }
+              readOnly={emailIsLocked}
+              disabled={emailIsLocked}
+              className={`w-full h-11 rounded-lg border border-[var(--ui,#1e293b)] bg-[var(--panel-2,#020617)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent,#ec4899)] ${
+                emailIsLocked ? "opacity-75 cursor-not-allowed" : ""
+              }`}
               placeholder="you@example.com"
             />
           </div>
 
+          {/* Reset code */}
           <div>
             <label className="block text-sm font-medium mb-1">
               Reset code
@@ -117,34 +134,54 @@ export default function VerifyResetClient({ initialEmail }: VerifyResetClientPro
             />
           </div>
 
+          {/* New password with show/hide */}
           <div>
             <label className="block text-sm font-medium mb-1">
               New password
             </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full h-11 rounded-lg border border-[var(--ui,#1e293b)] bg-[var(--panel-2,#020617)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent,#ec4899)]"
-              placeholder="Enter a new password"
-            />
+            <div className="relative">
+              <input
+                type={showNewPassword ? "text" : "password"}
+                required
+                minLength={8}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full h-11 rounded-lg border border-[var(--ui,#1e293b)] bg-[var(--panel-2,#020617)] px-3 pr-20 text-sm outline-none focus:ring-2 focus:ring-[var(--accent,#ec4899)]"
+                placeholder="Enter a new password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((v) => !v)}
+                className="absolute inset-y-0 right-3 my-auto text-xs font-semibold text-[var(--accent,#ec4899)] hover:underline"
+              >
+                {showNewPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
+          {/* Confirm password with show/hide */}
           <div>
             <label className="block text-sm font-medium mb-1">
               Confirm new password
             </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full h-11 rounded-lg border border-[var(--ui,#1e293b)] bg-[var(--panel-2,#020617)] px-3 text-sm outline-none focus:ring-2 focus:ring-[var(--accent,#ec4899)]"
-              placeholder="Repeat new password"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                required
+                minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full h-11 rounded-lg border border-[var(--ui,#1e293b)] bg-[var(--panel-2,#020617)] px-3 pr-20 text-sm outline-none focus:ring-2 focus:ring-[var(--accent,#ec4899)]"
+                placeholder="Repeat new password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                className="absolute inset-y-0 right-3 my-auto text-xs font-semibold text-[var(--accent,#ec4899)] hover:underline"
+              >
+                {showConfirmPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
           <button

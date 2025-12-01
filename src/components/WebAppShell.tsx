@@ -1,16 +1,11 @@
+// src/app/WebAppShell.tsx (or wherever this lives)
 "use client";
 
 import { useState } from "react";
 import Topbar from "@/components/Topbar";
 import Drawer from "@/components/Drawer";
 import Workbench from "@/components/Workbench";
-
-// Map your internal keys to real tickers.
-// Adjust these as needed.
-const TICKER_BY_KEY: Record<string, string> = {
-  ALPHA: "AAPL",
-  NODATA: "VRTX",
-};
+import { DATA } from "@/lib/data";
 
 export default function WebAppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -28,14 +23,18 @@ export default function WebAppShell() {
     setActiveKey(key);
   };
 
-  const activeTicker = TICKER_BY_KEY[activeKey] ?? activeKey;
+  // Look up the active company from DATA using the internal key (ALPHA, NONEXISTENT, etc.)
+  const activeCompany = DATA[activeKey as keyof typeof DATA] ?? DATA.ALPHA;
+
+  // Use the company's ticker for live quotes (or null/undefined when there isn't one)
+  const activeTicker = activeCompany.ticker || null;
 
   return (
     <div className={`webapp ${drawerOpen ? "drawer-open" : "drawer-closed"}`}>
       <Topbar
         onToggleDrawer={handleToggleDrawer}
         onOpenSettings={() => {
-          // TODO: open settings modal
+          // TODO: open settings page / route
         }}
         activeTicker={activeTicker}
       />
@@ -47,7 +46,8 @@ export default function WebAppShell() {
         onSelectCompany={handleSelectCompany}
       />
 
-      <Workbench activeKey={activeKey} activeTicker={activeTicker} />
+      {/* Workbench already uses DATA[activeKey] internally, so this stays keyed on ALPHA/NONEXISTENT */}
+      <Workbench activeKey={activeKey} />
     </div>
   );
 }

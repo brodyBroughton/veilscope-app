@@ -19,9 +19,9 @@ export type DataMap = Record<string, Company>;
 export const DATA: DataMap = {
   // Company WITH data (Apple as a demo)
   ALPHA: {
-    name: "Apple Inc.",
+    name: "Apple",
     desc: "Large-cap technology company with diversified hardware, software, and services revenue.",
-    ticker: "AAPL",
+    ticker: "NVDA",
     score: 82,
     factors: [
       {
@@ -61,7 +61,7 @@ export const DATA: DataMap = {
   NONEXISTENT: {
     name: "Horizon Biotech Labs",
     desc: "Pre-revenue biotech platform focused on early-stage oncology assets.",
-    ticker: "AAPL",
+    ticker: "",
     score: null,
     factors: [], // no factors → hasAnalysis = false
   }

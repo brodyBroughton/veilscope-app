@@ -9,7 +9,7 @@ type VerifyResetPageProps = {
 export default async function VerifyResetPage({
   searchParams,
 }: VerifyResetPageProps) {
-  const sp = await searchParams; // ✅ unwrap the Promise
+  const sp = await searchParams;
 
   const rawEmail = sp.email;
   const initialEmail =

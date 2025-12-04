@@ -1,7 +1,23 @@
+// src/components/Workbench.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { DATA, type Company } from "@/lib/data";
+
+export type Severity = "good" | "medium" | "bad";
+
+export interface Factor {
+  label: string;
+  text: string;
+  sev: Severity;
+}
+
+export interface CompanyLike {
+  name: string;
+  desc: string;
+  ticker: string;
+  score: number | null;
+  factors: Factor[];
+}
 
 type Quote = {
   symbol: string;
@@ -16,22 +32,21 @@ type Quote = {
 };
 
 type WorkbenchProps = {
-  activeKey: string;
+  // Active ticker symbol for quotes
   activeTicker?: string | null;
+
+  // The company data to display (summary + optional analysis)
+  company: CompanyLike | null;
+
+  // Called when user clicks "Run analysis"
   onRunAnalysis?: (ticker: string) => void;
 };
 
-export default function Workbench({
-  activeKey,
-  activeTicker,
-  onRunAnalysis,
-}: WorkbenchProps) {
-  // Fallback if activeKey isn't found
-  const fallbackKey = Object.keys(DATA)[0];
-  const company: Company = DATA[activeKey] ?? DATA[fallbackKey];
+export default function Workbench({ activeTicker, company, onRunAnalysis }: WorkbenchProps) {
+  const ticker = (activeTicker ?? "").toUpperCase();
 
-  // For now, treat "has analysis" as: numeric score + at least one factor
   const hasAnalysis =
+    !!company &&
     typeof company.score === "number" &&
     Number.isFinite(company.score) &&
     company.factors.length > 0;
@@ -39,10 +54,10 @@ export default function Workbench({
   const [quote, setQuote] = useState<Quote | null>(null);
 
   const handleRunAnalysis = () => {
-    if (onRunAnalysis) {
-      onRunAnalysis(activeKey);
+    if (onRunAnalysis && ticker) {
+      onRunAnalysis(ticker);
     } else {
-      console.log("Run analysis clicked for", activeKey);
+      console.log("Run analysis clicked for", ticker || "(no ticker)");
     }
   };
 
@@ -52,7 +67,7 @@ export default function Workbench({
 
   // Live quote for the side analytics panel
   useEffect(() => {
-    if (!activeTicker) {
+    if (!ticker) {
       setQuote(null);
       return;
     }
@@ -62,13 +77,10 @@ export default function Workbench({
 
     const fetchQuote = async () => {
       try {
-        const res = await fetch(
-          `/api/quote?symbol=${encodeURIComponent(activeTicker)}`,
-          {
-            method: "GET",
-            cache: "no-store",
-          }
-        );
+        const res = await fetch(`/api/quote?symbol=${encodeURIComponent(ticker)}`, {
+          method: "GET",
+          cache: "no-store",
+        });
 
         if (!res.ok) {
           if (!cancelled) setQuote(null);
@@ -96,7 +108,33 @@ export default function Workbench({
       cancelled = true;
       if (intervalId) clearInterval(intervalId);
     };
-  }, [activeTicker]);
+  }, [ticker]);
+
+  if (!company) {
+    return (
+      <div className="workbench">
+        <main className="pane-main" id="content" tabIndex={-1}>
+          <h1 className="company">No company selected</h1>
+          <p className="desc">
+            Use the sidebar to search for a company by ticker or name.
+          </p>
+        </main>
+
+        <aside className="pane-side" aria-label="Charts and live analytics">
+          <section className="live-analytics" aria-label="Live market analytics">
+            <h2 className="charts-title">Live analytics</h2>
+            <p className="live-analytics-empty">
+              Live market data is unavailable. No ticker selected.
+            </p>
+          </section>
+
+          <h2 className="charts-title">Charts</h2>
+          <div className="skeleton chart" />
+          <div className="skeleton chart" />
+        </aside>
+      </div>
+    );
+  }
 
   return (
     <div className="workbench">
@@ -118,29 +156,20 @@ export default function Workbench({
                 {company.factors.map((f, i) => (
                   <li key={i}>
                     <span className={`dot ${f.sev}`}></span>
-                    <strong>{f.label}:</strong>{" "}
-                    <span>{f.text}</span>
+                    <strong>{f.label}:</strong> <span>{f.text}</span>
                   </li>
                 ))}
               </ul>
             </section>
           </>
         ) : (
-          // Empty-state / "no analysis yet" card
-          <section
-            aria-label="No analysis yet"
-            className="empty-scorecard"
-          >
+          <section aria-label="No analysis yet" className="empty-scorecard">
             <h2 className="empty-scorecard-title">No analysis yet</h2>
             <p className="empty-scorecard-body">
               Run an analysis to generate a score and key factors for this company.
             </p>
 
-            <button
-              type="button"
-              className="primary-cta"
-              onClick={handleRunAnalysis}
-            >
+            <button type="button" className="primary-cta" onClick={handleRunAnalysis}>
               Run analysis
             </button>
 
@@ -152,7 +181,6 @@ export default function Workbench({
       </main>
 
       <aside className="pane-side" aria-label="Charts and live analytics">
-        {/* 🔹 New live analytics block */}
         <section className="live-analytics" aria-label="Live market analytics">
           <h2 className="charts-title">Live analytics</h2>
 
@@ -166,8 +194,7 @@ export default function Workbench({
                 <dt>Change</dt>
                 <dd className={quote.changePct >= 0 ? "pos" : "neg"}>
                   {quote.change >= 0 ? "+" : ""}
-                  {quote.change.toFixed(2)}{" "}
-                  ({quote.changePct >= 0 ? "+" : ""}
+                  {quote.change.toFixed(2)} ({quote.changePct >= 0 ? "+" : ""}
                   {quote.changePct.toFixed(2)}%)
                 </dd>
               </div>
@@ -195,7 +222,6 @@ export default function Workbench({
           )}
         </section>
 
-        {/* Existing charts section */}
         <h2 className="charts-title">Charts</h2>
         <div className="skeleton chart" />
         <div className="skeleton chart" />

@@ -25,12 +25,6 @@ interface AnalysisFactsResponse {
   revenue: Record<string, unknown>;
 }
 
-interface AnalysisInsightsResponse {
-  revenue: Record<string, unknown>;
-  cashflow: Record<string, unknown>;
-  debt: Record<string, unknown>;
-  stockinfo: unknown[];
-}
 
 async function getCurrentUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
@@ -85,36 +79,21 @@ export async function POST(req: NextRequest) {
   };
 
   const factsUrl = new URL("/analysis/facts", pythonBaseUrl);
-  const insightsUrl = new URL("/analysis/insights", pythonBaseUrl);
 
   let facts: AnalysisFactsResponse;
-  let insights: AnalysisInsightsResponse;
   try {
-    const [factsRes, insightsRes] = await Promise.all([
-      fetch(factsUrl.toString(), {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ ticker }),
-        cache: "no-store",
-      }),
-      fetch(insightsUrl.toString(), {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ ticker, useCache: true }),
-        cache: "no-store",
-      }),
-    ]);
+    const factsRes = await fetch(factsUrl.toString(), {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ticker }),
+      cache: "no-store",
+    });
 
-    if (!factsRes.ok || !insightsRes.ok) {
-      const factsText = !factsRes.ok ? await factsRes.text().catch(() => "") : "";
-      const insightsText = !insightsRes.ok
-        ? await insightsRes.text().catch(() => "")
-        : "";
+    if (!factsRes.ok) {
+      const factsText = await factsRes.text().catch(() => "");
       console.error("External analyze error:", {
         factsStatus: factsRes.status,
         factsText,
-        insightsStatus: insightsRes.status,
-        insightsText,
       });
       return NextResponse.json(
         { error: "Analysis failed" },
@@ -123,7 +102,6 @@ export async function POST(req: NextRequest) {
     }
 
     facts = (await factsRes.json()) as AnalysisFactsResponse;
-    insights = (await insightsRes.json()) as AnalysisInsightsResponse;
   } catch (err) {
     console.error("Analysis route error:", err);
     return NextResponse.json(
@@ -135,7 +113,6 @@ export async function POST(req: NextRequest) {
   const data = {
     ticker,
     facts,
-    insights,
   };
 
   // Upsert Item for this user+ticker

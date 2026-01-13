@@ -139,8 +139,8 @@ export default function Workbench({ activeTicker, company, onRunAnalysis }: Work
   return (
     <div className="workbench">
       <main className="pane-main" id="content" tabIndex={-1}>
-        <h1 className="company">{company.name}</h1>
-        <p className="desc">{company.desc}</p>
+        <h1 className="company">{company.ticker}</h1>
+        {company.desc ? <p className="desc">{company.desc}</p> : null}
 
         {hasAnalysis ? (
           <>

@@ -123,11 +123,7 @@ export default function WebAppShell() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            ticker,
-            name: company.name,
-            desc: company.desc,
-          }),
+          body: JSON.stringify({ ticker }),
         });
 
         if (!res.ok) {

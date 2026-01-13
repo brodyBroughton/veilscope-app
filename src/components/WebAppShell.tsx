@@ -183,35 +183,8 @@ export default function WebAppShell() {
         return;
       }
 
-      const data = (await res.json()) as CompanyLike;
-
-      setActiveCompany((prev) => {
-        if (!prev) return data;
-        if (prev.ticker.toUpperCase() !== data.ticker.toUpperCase()) return data;
-        return {
-          ...prev,
-          score: data.score,
-          factors: data.factors,
-        };
-      });
-
-      // Update savedItems so Drawer reflects analysis status
-      setSavedItems((prev) => {
-        const others = prev.filter(
-          (item) => item.ticker.toUpperCase() !== data.ticker.toUpperCase()
-        );
-        return [
-          {
-            id: `${data.ticker}-local`,
-            ticker: data.ticker,
-            name: data.name,
-            desc: data.desc,
-            score: data.score,
-            factors: data.factors,
-          },
-          ...others,
-        ];
-      });
+      const data = await res.json();
+      console.log("Analysis response:", data);
     } catch (err) {
       console.error("Analysis error:", err);
     } finally {

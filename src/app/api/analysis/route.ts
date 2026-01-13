@@ -25,6 +25,18 @@ interface AnalysisFactsResponse {
   revenue: Record<string, unknown>;
 }
 
+interface AnalysisInsightsResponse {
+  revenue: Record<string, unknown>;
+  cashflow: Record<string, unknown>;
+  debt: Record<string, unknown>;
+  stockinfo: unknown[];
+}
+
+const isEnvEnabled = (value: string | undefined, defaultValue: boolean) => {
+  if (value == null || value === "") return defaultValue;
+  return value.toLowerCase() !== "false";
+};
+
 
 async function getCurrentUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
@@ -44,11 +56,20 @@ async function getCurrentUserId(): Promise<string | null> {
 export async function POST(req: NextRequest) {
   const pythonBaseUrl = process.env.PYTHON_API_BASE_URL;
   const pythonToken = process.env.PYTHON_API_TOKEN;
+  const enableFacts = isEnvEnabled(process.env.PYTHON_ENABLE_FACTS, true);
+  const enableInsights = isEnvEnabled(process.env.PYTHON_ENABLE_INSIGHTS, true);
 
   if (!pythonBaseUrl || !pythonToken) {
     return NextResponse.json(
       { error: "Python API is not configured" },
       { status: 500 }
+    );
+  }
+
+  if (!enableFacts && !enableInsights) {
+    return NextResponse.json(
+      { error: "Both analysis endpoints are disabled" },
+      { status: 400 }
     );
   }
 
@@ -79,29 +100,63 @@ export async function POST(req: NextRequest) {
   };
 
   const factsUrl = new URL("/analysis/facts", pythonBaseUrl);
+  const insightsUrl = new URL("/analysis/insights", pythonBaseUrl);
 
-  let facts: AnalysisFactsResponse;
+  let facts: AnalysisFactsResponse | null = null;
+  let insights: AnalysisInsightsResponse | null = null;
   try {
-    const factsRes = await fetch(factsUrl.toString(), {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ ticker }),
-      cache: "no-store",
-    });
+    const requests: Array<Promise<Response>> = [];
+    const labels: Array<"facts" | "insights"> = [];
 
-    if (!factsRes.ok) {
-      const factsText = await factsRes.text().catch(() => "");
-      console.error("External analyze error:", {
-        factsStatus: factsRes.status,
-        factsText,
-      });
-      return NextResponse.json(
-        { error: "Analysis failed" },
-        { status: 500 }
+    if (enableFacts) {
+      requests.push(
+        fetch(factsUrl.toString(), {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ ticker }),
+          cache: "no-store",
+        })
       );
+      labels.push("facts");
     }
 
-    facts = (await factsRes.json()) as AnalysisFactsResponse;
+    if (enableInsights) {
+      requests.push(
+        fetch(insightsUrl.toString(), {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ ticker, useCache: true }),
+          cache: "no-store",
+        })
+      );
+      labels.push("insights");
+    }
+
+    const responses = await Promise.all(requests);
+    for (const [index, res] of responses.entries()) {
+      const label = labels[index];
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        console.error("External analyze error:", {
+          endpoint: label,
+          status: res.status,
+          text,
+        });
+        return NextResponse.json(
+          { error: "Analysis failed" },
+          { status: 500 }
+        );
+      }
+    }
+
+    for (const [index, res] of responses.entries()) {
+      const label = labels[index];
+      if (label === "facts") {
+        facts = (await res.json()) as AnalysisFactsResponse;
+      } else {
+        insights = (await res.json()) as AnalysisInsightsResponse;
+      }
+    }
   } catch (err) {
     console.error("Analysis route error:", err);
     return NextResponse.json(
@@ -113,6 +168,7 @@ export async function POST(req: NextRequest) {
   const data = {
     ticker,
     facts,
+    insights,
   };
 
   // Upsert Item for this user+ticker

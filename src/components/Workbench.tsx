@@ -169,15 +169,25 @@ const extractSeries = (metricData: unknown, metricKey: string): ChartDatum[] => 
 const BarChart = ({ title, data }: { title: string; data: ChartDatum[] }) => {
   const width = 360;
   const height = 220;
-  const padding = { top: 24, right: 16, bottom: 36, left: 44 };
+  const padding = { top: 24, right: 16, bottom: 48, left: 52 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
+  const minValue = Math.min(...data.map((d) => d.value), 0);
   const maxValue = Math.max(...data.map((d) => d.value), 0);
-  const safeMax = maxValue > 0 ? maxValue : 1;
+  const range = maxValue - minValue;
+  const safeRange = range !== 0 ? range : 1;
   const band = chartWidth / Math.max(data.length, 1);
   const barWidth = band * 0.6;
 
-  const ticks = Array.from({ length: 5 }, (_, i) => (safeMax / 4) * i);
+  const ticks = Array.from({ length: 5 }, (_, i) =>
+    minValue + (safeRange / 4) * i
+  );
+  const zeroY =
+    padding.top + chartHeight - ((0 - minValue) / safeRange) * chartHeight;
+  const formatTick = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 2,
+    }).format(value);
 
   return (
     <div style={{ background: "#fff", padding: "16px", borderRadius: "12px" }}>
@@ -196,7 +206,9 @@ const BarChart = ({ title, data }: { title: string; data: ChartDatum[] }) => {
         >
           {ticks.map((tick) => {
             const y =
-              padding.top + chartHeight - (tick / safeMax) * chartHeight;
+              padding.top +
+              chartHeight -
+              ((tick - minValue) / safeRange) * chartHeight;
             return (
               <g key={tick}>
                 <line
@@ -214,16 +226,25 @@ const BarChart = ({ title, data }: { title: string; data: ChartDatum[] }) => {
                   fill="#6B7280"
                   textAnchor="end"
                 >
-                  {Math.round(tick)}
+                  {formatTick(tick)}
                 </text>
               </g>
             );
           })}
+          <line
+            x1={padding.left}
+            x2={width - padding.right}
+            y1={zeroY}
+            y2={zeroY}
+            stroke="#9CA3AF"
+            strokeWidth="1"
+          />
           {data.map((d, index) => {
             const x = padding.left + index * band + (band - barWidth) / 2;
-            const barHeight = (d.value / safeMax) * chartHeight;
-            const y = padding.top + chartHeight - barHeight;
-            const parts = d.label.split(" ");
+            const barHeight = (Math.abs(d.value) / safeRange) * chartHeight;
+            const y = d.value >= 0 ? zeroY - barHeight : zeroY;
+            const quarterLabel = d.quarter ? `Q${d.quarter}` : d.label;
+            const yearLabel = d.year ? String(d.year) : "";
             return (
               <g key={`${d.label}-${index}`}>
                 <rect
@@ -236,24 +257,27 @@ const BarChart = ({ title, data }: { title: string; data: ChartDatum[] }) => {
                 />
                 <text
                   x={x + barWidth / 2}
-                  y={padding.top + chartHeight + 16}
+                  y={padding.top + chartHeight + 18}
                   fontSize="10"
                   fill="#6B7280"
                   textAnchor="middle"
                 >
-                  {parts.length > 1 ? (
-                    <>
-                      <tspan x={x + barWidth / 2} dy="0">
-                        {parts[0]}
-                      </tspan>
-                      <tspan x={x + barWidth / 2} dy="12">
-                        {parts.slice(1).join(" ")}
-                      </tspan>
-                    </>
-                  ) : (
-                    d.label
-                  )}
+                  {quarterLabel}
                 </text>
+                {yearLabel ? (
+                  <text
+                    x={x + barWidth / 2}
+                    y={padding.top + chartHeight + 42}
+                    fontSize="10"
+                    fill="#6B7280"
+                    textAnchor="middle"
+                    transform={`rotate(-90 ${x + barWidth / 2} ${
+                      padding.top + chartHeight + 42
+                    })`}
+                  >
+                    {yearLabel}
+                  </text>
+                ) : null}
               </g>
             );
           })}

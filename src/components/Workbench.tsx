@@ -59,6 +59,7 @@ type WorkbenchProps = {
 };
 
 const CHART_BAR_COLOR = "#EC4899";
+const CHART_TEXT_COLOR = "#000";
 
 const parseYear = (value: unknown) => {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -223,7 +224,7 @@ const BarChart = ({ title, data }: { title: string; data: ChartDatum[] }) => {
                   x={padding.left - 8}
                   y={y + 4}
                   fontSize="10"
-                  fill="#6B7280"
+                  fill={CHART_TEXT_COLOR}
                   textAnchor="end"
                 >
                   {formatTick(tick)}
@@ -259,7 +260,7 @@ const BarChart = ({ title, data }: { title: string; data: ChartDatum[] }) => {
                   x={x + barWidth / 2}
                   y={padding.top + chartHeight + 18}
                   fontSize="10"
-                  fill="#6B7280"
+                  fill={CHART_TEXT_COLOR}
                   textAnchor="middle"
                 >
                   {quarterLabel}
@@ -269,7 +270,7 @@ const BarChart = ({ title, data }: { title: string; data: ChartDatum[] }) => {
                     x={x + barWidth / 2}
                     y={padding.top + chartHeight + 42}
                     fontSize="10"
-                    fill="#6B7280"
+                    fill={CHART_TEXT_COLOR}
                     textAnchor="middle"
                     transform={`rotate(-90 ${x + barWidth / 2} ${
                       padding.top + chartHeight + 42
@@ -303,6 +304,7 @@ export default function Workbench({
     company.factors.length > 0;
 
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [hasRequestedAnalysis, setHasRequestedAnalysis] = useState(false);
 
   const chartSeries = useMemo(() => {
     if (!facts) {
@@ -321,6 +323,7 @@ export default function Workbench({
 
   const handleRunAnalysis = () => {
     if (onRunAnalysis && ticker) {
+      setHasRequestedAnalysis(true);
       onRunAnalysis(ticker);
     } else {
       console.log("Run analysis clicked for", ticker || "(no ticker)");
@@ -395,8 +398,9 @@ export default function Workbench({
           </section>
 
           <h2 className="charts-title">Charts</h2>
-          <div className="skeleton chart" />
-          <div className="skeleton chart" />
+          <p className="live-analytics-empty">
+            Run an analysis to view chart data.
+          </p>
         </aside>
       </div>
     );
@@ -489,23 +493,22 @@ export default function Workbench({
         </section>
 
         <h2 className="charts-title">Charts</h2>
-        {isFactsLoading ? (
-          <>
-            <div className="skeleton chart" />
-            <div className="skeleton chart" />
-            <div className="skeleton chart" />
-          </>
-        ) : facts ? (
+        {facts ? (
           <div style={{ display: "grid", gap: "16px" }}>
             <BarChart title="EPS" data={chartSeries.eps} />
             <BarChart title="Cashflow" data={chartSeries.cashflow} />
             <BarChart title="Revenue" data={chartSeries.revenue} />
           </div>
-        ) : (
+        ) : hasRequestedAnalysis && isFactsLoading ? (
           <>
             <div className="skeleton chart" />
             <div className="skeleton chart" />
+            <div className="skeleton chart" />
           </>
+        ) : (
+          <p className="live-analytics-empty">
+            Run an analysis to view chart data.
+          </p>
         )}
       </aside>
     </div>

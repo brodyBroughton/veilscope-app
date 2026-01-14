@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   const pythonBaseUrl = process.env.PYTHON_API_BASE_URL;
   const pythonToken = process.env.PYTHON_API_TOKEN;
   const enableFacts = isEnvEnabled(process.env.PYTHON_ENABLE_FACTS, true);
-  const enableInsights = isEnvEnabled(process.env.PYTHON_ENABLE_INSIGHTS, true);
+  const enableInsights = isEnvEnabled(process.env.PYTHON_ENABLE_INSIGHTS, false);
 
   if (!pythonBaseUrl || !pythonToken) {
     return NextResponse.json(

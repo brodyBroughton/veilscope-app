@@ -16,6 +16,8 @@ type DrawerProps = {
   activeKey: string;
   // Called with the selected company summary
   onSelectCompany: (company: CompanySummary) => void;
+  // Called when a saved company should be deleted
+  onDeleteSavedCompany: (ticker: string) => void;
   // Saved companies loaded from the database
   savedCompanies: CompanySummary[];
 };
@@ -25,6 +27,7 @@ export default function Drawer({
   onClose,
   activeKey,
   onSelectCompany,
+  onDeleteSavedCompany,
   savedCompanies,
 }: DrawerProps) {
   const [query, setQuery] = React.useState("");
@@ -42,6 +45,16 @@ export default function Drawer({
   const handleSelect = (company: CompanySummary) => {
     onSelectCompany(company);
     closeOnMobile();
+  };
+
+  const handleDelete = (ticker: string) => {
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete ${ticker}?`
+      );
+      if (!confirmed) return;
+    }
+    onDeleteSavedCompany(ticker);
   };
 
   // Debounced search → /api/search
@@ -123,24 +136,37 @@ export default function Drawer({
                   <ul>
                     {savedCompanies.map((company) => (
                       <li key={company.ticker}>
-                        <button
-                          type="button"
-                          className="drawer-item-btn"
-                          onClick={() => handleSelect(company)}
-                          aria-current={
-                            company.ticker === activeKey ? "page" : undefined
-                          }
-                        >
-                          <span className="drawer-item-name">
-                            {company.name
-                              ? `${company.name} (${company.ticker})`
-                              : company.ticker}
-                          </span>
-                          <span className="drawer-item-meta">
-                            {/* We don't know analysis state here; the main pane will show it */}
-                            Saved
-                          </span>
-                        </button>
+                        <div className="drawer-item-row">
+                          <button
+                            type="button"
+                            className="drawer-item-btn"
+                            onClick={() => handleSelect(company)}
+                            aria-current={
+                              company.ticker === activeKey ? "page" : undefined
+                            }
+                          >
+                            <span className="drawer-item-name">
+                              {company.name
+                                ? `${company.name} (${company.ticker})`
+                                : company.ticker}
+                            </span>
+                            <span className="drawer-item-meta">
+                              {/* We don't know analysis state here; the main pane will show it */}
+                              Saved
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className="drawer-item-delete"
+                            aria-label={`Delete ${company.ticker}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDelete(company.ticker);
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>

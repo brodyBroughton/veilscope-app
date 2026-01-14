@@ -92,6 +92,58 @@ export default function WebAppShell() {
     setDrawerOpen(false);
   };
 
+  const handleDeleteSavedCompany = async (ticker: string) => {
+    if (!ticker) return;
+
+    try {
+      const res = await fetch("/api/item/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ticker }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        console.error("Failed to delete saved item:", res.status, text);
+        return;
+      }
+
+      setSavedItems((prev) => {
+        const normalizedTicker = ticker.toUpperCase();
+        const nextItems = prev.filter(
+          (item) => item.ticker.toUpperCase() !== normalizedTicker
+        );
+
+        if (activeTicker.toUpperCase() === normalizedTicker) {
+          if (nextItems.length > 0) {
+            const first = nextItems[0];
+            setActiveTicker(first.ticker);
+            setActiveCompany({
+              name: first.name,
+              desc: first.desc,
+              ticker: first.ticker,
+              score: first.score,
+              factors: first.factors,
+            });
+            setAnalysisFactsTicker(first.ticker);
+            setAnalysisFacts(first.facts ?? null);
+          } else {
+            setActiveTicker("");
+            setActiveCompany(null);
+            setAnalysisFactsTicker("");
+            setAnalysisFacts(null);
+          }
+        }
+
+        return nextItems;
+      });
+    } catch (err) {
+      console.error("Error deleting saved item:", err);
+    }
+  };
+
   const handleSelectCompany = (company: CompanySummary) => {
     const ticker = company.ticker.toUpperCase();
     setActiveTicker(ticker);
@@ -250,6 +302,7 @@ export default function WebAppShell() {
         onClose={handleCloseDrawer}
         activeKey={activeTicker}
         onSelectCompany={handleSelectCompany}
+        onDeleteSavedCompany={handleDeleteSavedCompany}
         savedCompanies={savedItems.map((item) => ({
           ticker: item.ticker,
           name: item.name,

@@ -351,6 +351,12 @@ html[data-theme="dark"] .logo-dark{ display:none; }
   font-size: 13px;
 }
 
+.drawer-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .drawer-item-btn:hover {
   background: var(--panel-2);
 }
@@ -368,6 +374,26 @@ html[data-theme="dark"] .logo-dark{ display:none; }
 .drawer-item-meta {
   font-size: 11px;
   color: var(--ink-2);
+}
+
+.drawer-item-delete {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drawer-item-delete:hover {
+  background: var(--panel-2);
+  color: var(--ink);
 }
 
 /* ===== Workbench ===== */

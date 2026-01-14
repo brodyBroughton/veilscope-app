@@ -181,13 +181,23 @@ export async function POST(req: NextRequest) {
   });
 
   if (existing) {
+    const previousContent =
+      existing.content && typeof existing.content === "object"
+        ? (existing.content as Record<string, unknown>)
+        : {};
+    const mergedContent = {
+      ...previousContent,
+      ticker: data.ticker,
+      facts: data.facts,
+      insights: data.insights,
+    };
     await prisma.item.update({
       where: { id: existing.id },
       data: {
         title: existing.title || `${data.ticker} analysis`,
         ticker: data.ticker,
         type: "analysis",
-        content: data as unknown as Prisma.InputJsonValue,
+        content: mergedContent as unknown as Prisma.InputJsonValue,
       },
     });
   } else {

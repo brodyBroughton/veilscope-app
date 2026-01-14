@@ -34,6 +34,7 @@ interface SavedItemDTO {
   desc: string;
   score: number | null;
   factors: Factor[];
+  facts: Record<string, unknown> | null;
 }
 
 async function getCurrentUserId(): Promise<string | null> {
@@ -92,6 +93,10 @@ export async function GET(_req: NextRequest) {
                   : ("medium" as Severity),
             }))
           : [];
+      const facts =
+        c && typeof c.facts === "object" && c.facts !== null
+          ? (c.facts as Record<string, unknown>)
+          : null;
 
       return {
         id: item.id,
@@ -100,6 +105,7 @@ export async function GET(_req: NextRequest) {
         desc,
         score,
         factors,
+        facts,
       };
     })
     .filter(Boolean) as SavedItemDTO[];

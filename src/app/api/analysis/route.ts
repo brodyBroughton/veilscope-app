@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   const pythonBaseUrl = process.env.PYTHON_API_BASE_URL;
   const pythonToken = process.env.PYTHON_API_TOKEN;
   const enableFacts = isEnvEnabled(process.env.PYTHON_ENABLE_FACTS, true);
-  const enableInsights = isEnvEnabled(process.env.PYTHON_ENABLE_INSIGHTS, true);
+  const enableInsights = isEnvEnabled(process.env.PYTHON_ENABLE_INSIGHTS, false);
 
   if (!pythonBaseUrl || !pythonToken) {
     return NextResponse.json(
@@ -181,13 +181,23 @@ export async function POST(req: NextRequest) {
   });
 
   if (existing) {
+    const previousContent =
+      existing.content && typeof existing.content === "object"
+        ? (existing.content as Record<string, unknown>)
+        : {};
+    const mergedContent = {
+      ...previousContent,
+      ticker: data.ticker,
+      facts: data.facts,
+      insights: data.insights,
+    };
     await prisma.item.update({
       where: { id: existing.id },
       data: {
         title: existing.title || `${data.ticker} analysis`,
         ticker: data.ticker,
         type: "analysis",
-        content: data as unknown as Prisma.InputJsonValue,
+        content: mergedContent as unknown as Prisma.InputJsonValue,
       },
     });
   } else {

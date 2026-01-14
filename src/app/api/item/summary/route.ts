@@ -33,6 +33,8 @@ interface CompanyLike {
   ticker: string;
   score: number | null;
   factors: Factor[];
+  facts?: unknown;
+  insights?: unknown;
 }
 
 async function getCurrentUserId(): Promise<string | null> {
@@ -90,9 +92,12 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // If we already have an item, keep existing score/factors, but update name/desc/ticker
+  // If we already have an item, keep existing score/factors/facts, but update name/desc/ticker
   if (existing?.content) {
     const prev = existing.content as any;
+    const prevFacts = prev && typeof prev.facts === "object" ? prev.facts : null;
+    const prevInsights =
+      prev && typeof prev.insights === "object" ? prev.insights : null;
 
     const itemContent: CompanyLike = {
       name,
@@ -100,6 +105,8 @@ export async function POST(req: NextRequest) {
       ticker,
       score: typeof prev.score === "number" ? prev.score : null,
       factors: Array.isArray(prev.factors) ? prev.factors : [],
+      facts: prevFacts ?? undefined,
+      insights: prevInsights ?? undefined,
     };
 
     await prisma.item.update({

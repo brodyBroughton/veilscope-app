@@ -19,6 +19,7 @@ type SavedItemDTO = {
   desc: string;
   score: number | null;
   factors: CompanyLike["factors"];
+  facts: AnalysisFacts | null;
 };
 
 export default function WebAppShell() {
@@ -65,6 +66,8 @@ export default function WebAppShell() {
               score: first.score,
               factors: first.factors,
             });
+            setAnalysisFactsTicker(first.ticker);
+            setAnalysisFacts(first.facts ?? null);
           }
         }
       } catch (err) {
@@ -89,10 +92,61 @@ export default function WebAppShell() {
     setDrawerOpen(false);
   };
 
+  const handleDeleteSavedCompany = async (ticker: string) => {
+    if (!ticker) return;
+
+    try {
+      const res = await fetch("/api/item/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ticker }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        console.error("Failed to delete saved item:", res.status, text);
+        return;
+      }
+
+      setSavedItems((prev) => {
+        const normalizedTicker = ticker.toUpperCase();
+        const nextItems = prev.filter(
+          (item) => item.ticker.toUpperCase() !== normalizedTicker
+        );
+
+        if (activeTicker.toUpperCase() === normalizedTicker) {
+          if (nextItems.length > 0) {
+            const first = nextItems[0];
+            setActiveTicker(first.ticker);
+            setActiveCompany({
+              name: first.name,
+              desc: first.desc,
+              ticker: first.ticker,
+              score: first.score,
+              factors: first.factors,
+            });
+            setAnalysisFactsTicker(first.ticker);
+            setAnalysisFacts(first.facts ?? null);
+          } else {
+            setActiveTicker("");
+            setActiveCompany(null);
+            setAnalysisFactsTicker("");
+            setAnalysisFacts(null);
+          }
+        }
+
+        return nextItems;
+      });
+    } catch (err) {
+      console.error("Error deleting saved item:", err);
+    }
+  };
+
   const handleSelectCompany = (company: CompanySummary) => {
     const ticker = company.ticker.toUpperCase();
     setActiveTicker(ticker);
-    setAnalysisFacts(null);
     setAnalysisFactsTicker(ticker);
 
     // See if we already have a saved item for this ticker
@@ -108,7 +162,9 @@ export default function WebAppShell() {
         score: saved.score,
         factors: saved.factors,
       });
+      setAnalysisFacts(saved.facts ?? null);
     } else {
+      setAnalysisFacts(null);
       // Fallback to just the summary (no analysis yet)
       setActiveCompany({
         name: company.name,
@@ -127,7 +183,11 @@ export default function WebAppShell() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ ticker }),
+          body: JSON.stringify({
+            ticker,
+            name: company.name,
+            desc: company.desc,
+          }),
         });
 
         if (!res.ok) {
@@ -142,6 +202,9 @@ export default function WebAppShell() {
 
         // Also update savedItems list so Drawer stays in sync
         setSavedItems((prev) => {
+          const previousItem = prev.find(
+            (item) => item.ticker.toUpperCase() === ticker
+          );
           const others = prev.filter(
             (item) => item.ticker.toUpperCase() !== ticker
           );
@@ -153,6 +216,7 @@ export default function WebAppShell() {
               desc: savedContent.desc,
               score: savedContent.score,
               factors: savedContent.factors,
+              facts: previousItem?.facts ?? null,
             },
             ...others,
           ];
@@ -187,7 +251,33 @@ export default function WebAppShell() {
 
       const data = await res.json();
       console.log("Analysis response:", data);
-      setAnalysisFacts((data?.facts as AnalysisFacts | undefined) ?? null);
+      const nextFacts = (data?.facts as AnalysisFacts | undefined) ?? null;
+      setAnalysisFacts(nextFacts);
+      setSavedItems((prev) => {
+        const normalizedTicker = ticker.toUpperCase();
+        const existing = prev.find(
+          (item) => item.ticker.toUpperCase() === normalizedTicker
+        );
+        const others = prev.filter(
+          (item) => item.ticker.toUpperCase() !== normalizedTicker
+        );
+        const baseCompany = existing ?? {
+          id: `${normalizedTicker}-local`,
+          ticker: normalizedTicker,
+          name: activeCompany?.name ?? normalizedTicker,
+          desc: activeCompany?.desc ?? "",
+          score: activeCompany?.score ?? null,
+          factors: activeCompany?.factors ?? [],
+          facts: null,
+        };
+        return [
+          {
+            ...baseCompany,
+            facts: nextFacts,
+          },
+          ...others,
+        ];
+      });
     } catch (err) {
       console.error("Analysis error:", err);
     } finally {
@@ -212,6 +302,7 @@ export default function WebAppShell() {
         onClose={handleCloseDrawer}
         activeKey={activeTicker}
         onSelectCompany={handleSelectCompany}
+        onDeleteSavedCompany={handleDeleteSavedCompany}
         savedCompanies={savedItems.map((item) => ({
           ticker: item.ticker,
           name: item.name,

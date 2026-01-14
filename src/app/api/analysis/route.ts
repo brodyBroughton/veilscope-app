@@ -19,27 +19,24 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
-type Severity = "good" | "medium" | "bad";
-
-interface Factor {
-  label: string;
-  text: string;
-  sev: Severity;
+interface AnalysisFactsResponse {
+  eps: Record<string, unknown>;
+  cashflow: Record<string, unknown>;
+  revenue: Record<string, unknown>;
 }
 
-interface CompanyLike {
-  name: string;
-  desc: string;
-  ticker: string;
-  score: number | null;
-  factors: Factor[];
+interface AnalysisInsightsResponse {
+  revenue: Record<string, unknown>;
+  cashflow: Record<string, unknown>;
+  debt: Record<string, unknown>;
+  stockinfo: unknown[];
 }
 
-// Your Python deployment base URL
-const PYTHON_BASE_URL = "https://veilscope-temp.vercel.app";
+const isEnvEnabled = (value: string | undefined, defaultValue: boolean) => {
+  if (value == null || value === "") return defaultValue;
+  return value.toLowerCase() !== "false";
+};
 
-const DEFAULT_YEAR = 2025;
-const DEFAULT_QUARTER = 3;
 
 async function getCurrentUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
@@ -57,6 +54,25 @@ async function getCurrentUserId(): Promise<string | null> {
 }
 
 export async function POST(req: NextRequest) {
+  const pythonBaseUrl = process.env.PYTHON_API_BASE_URL;
+  const pythonToken = process.env.PYTHON_API_TOKEN;
+  const enableFacts = isEnvEnabled(process.env.PYTHON_ENABLE_FACTS, true);
+  const enableInsights = isEnvEnabled(process.env.PYTHON_ENABLE_INSIGHTS, true);
+
+  if (!pythonBaseUrl || !pythonToken) {
+    return NextResponse.json(
+      { error: "Python API is not configured" },
+      { status: 500 }
+    );
+  }
+
+  if (!enableFacts && !enableInsights) {
+    return NextResponse.json(
+      { error: "Both analysis endpoints are disabled" },
+      { status: 400 }
+    );
+  }
+
   const userId = await getCurrentUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -78,30 +94,69 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Call Python /api/analyze
-  const url = new URL("/api/analyze", PYTHON_BASE_URL);
-  url.searchParams.set("ticker", ticker);
-  url.searchParams.set("year", String(DEFAULT_YEAR));
-  url.searchParams.set("quarter", String(DEFAULT_QUARTER));
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${pythonToken}`,
+  };
 
-  let external: any;
+  const factsUrl = new URL("/analysis/facts", pythonBaseUrl);
+  const insightsUrl = new URL("/analysis/insights", pythonBaseUrl);
+
+  let facts: AnalysisFactsResponse | null = null;
+  let insights: AnalysisInsightsResponse | null = null;
   try {
-    const res = await fetch(url.toString(), {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    });
+    const requests: Array<Promise<Response>> = [];
+    const labels: Array<"facts" | "insights"> = [];
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      console.error("External analyze error:", res.status, text);
-      return NextResponse.json(
-        { error: "Analysis failed", status: res.status },
-        { status: 500 }
+    if (enableFacts) {
+      requests.push(
+        fetch(factsUrl.toString(), {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ ticker }),
+          cache: "no-store",
+        })
       );
+      labels.push("facts");
     }
 
-    external = await res.json();
+    if (enableInsights) {
+      requests.push(
+        fetch(insightsUrl.toString(), {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ ticker, useCache: true }),
+          cache: "no-store",
+        })
+      );
+      labels.push("insights");
+    }
+
+    const responses = await Promise.all(requests);
+    for (const [index, res] of responses.entries()) {
+      const label = labels[index];
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        console.error("External analyze error:", {
+          endpoint: label,
+          status: res.status,
+          text,
+        });
+        return NextResponse.json(
+          { error: "Analysis failed" },
+          { status: 500 }
+        );
+      }
+    }
+
+    for (const [index, res] of responses.entries()) {
+      const label = labels[index];
+      if (label === "facts") {
+        facts = (await res.json()) as AnalysisFactsResponse;
+      } else {
+        insights = (await res.json()) as AnalysisInsightsResponse;
+      }
+    }
   } catch (err) {
     console.error("Analysis route error:", err);
     return NextResponse.json(
@@ -110,27 +165,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Normalize into CompanyLike
-  const data: CompanyLike = {
-    name: String(external.name ?? ""),
-    desc: String(external.desc ?? ""),
-    ticker: String(external.ticker ?? ticker).toUpperCase(),
-    score:
-      typeof external.score === "number"
-        ? external.score
-        : external.score == null
-        ? null
-        : Number(external.score) || null,
-    factors: Array.isArray(external.factors)
-      ? external.factors.map((f: any) => ({
-          label: String(f.label ?? ""),
-          text: String(f.text ?? ""),
-          sev:
-            f.sev === "good" || f.sev === "medium" || f.sev === "bad"
-              ? f.sev
-              : ("medium" as Severity),
-        }))
-      : [],
+  const data = {
+    ticker,
+    facts,
+    insights,
   };
 
   // Upsert Item for this user+ticker

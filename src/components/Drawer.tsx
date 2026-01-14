@@ -31,6 +31,7 @@ export default function Drawer({
   const [results, setResults] = React.useState<CompanySummary[]>([]);
   const [isSearching, setIsSearching] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const normalizedQuery = query.trim().toUpperCase();
 
   const closeOnMobile = () => {
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 991px)").matches) {
@@ -45,7 +46,7 @@ export default function Drawer({
 
   // Debounced search → /api/search
   React.useEffect(() => {
-    if (!query.trim()) {
+    if (!normalizedQuery) {
       setResults([]);
       setIsSearching(false);
       setError(null);
@@ -58,7 +59,7 @@ export default function Drawer({
     const controller = new AbortController();
     const timeoutId = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`, {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(normalizedQuery)}`, {
           signal: controller.signal,
         });
 
@@ -82,7 +83,7 @@ export default function Drawer({
       controller.abort();
       clearTimeout(timeoutId);
     };
-  }, [query]);
+  }, [normalizedQuery]);
 
   return (
     <>
@@ -111,7 +112,7 @@ export default function Drawer({
 
         <div className="drawer-search-results">
           {/* When no query, show saved companies */}
-          {query.trim().length === 0 && (
+          {normalizedQuery.length === 0 && (
             <>
               {savedCompanies.length === 0 ? (
                 <p className="drawer-hint">
@@ -131,7 +132,9 @@ export default function Drawer({
                           }
                         >
                           <span className="drawer-item-name">
-                            {company.name} ({company.ticker})
+                            {company.name
+                              ? `${company.name} (${company.ticker})`
+                              : company.ticker}
                           </span>
                           <span className="drawer-item-meta">
                             {/* We don't know analysis state here; the main pane will show it */}
@@ -147,10 +150,34 @@ export default function Drawer({
           )}
 
           {/* When there is a query, show search results */}
-          {query.trim().length > 0 && (
+          {normalizedQuery.length > 0 && (
             <>
               {isSearching && <p className="drawer-hint">Searching…</p>}
               {error && <p className="drawer-error">{error}</p>}
+              <nav className="tree" aria-label="Direct ticker selection">
+                <ul>
+                  <li>
+                    <button
+                      type="button"
+                      className="drawer-item-btn"
+                      onClick={() =>
+                        handleSelect({
+                          ticker: normalizedQuery,
+                          name: "",
+                          desc: "",
+                        })
+                      }
+                    >
+                      <span className="drawer-item-name">
+                        {normalizedQuery}
+                      </span>
+                      <span className="drawer-item-meta">
+                        Use ticker
+                      </span>
+                    </button>
+                  </li>
+                </ul>
+              </nav>
               {!isSearching && !error && results.length === 0 && (
                 <p className="drawer-hint">No matches found.</p>
               )}
@@ -168,7 +195,9 @@ export default function Drawer({
                           }
                         >
                           <span className="drawer-item-name">
-                            {company.name} ({company.ticker})
+                            {company.name
+                              ? `${company.name} (${company.ticker})`
+                              : company.ticker}
                           </span>
                           <span className="drawer-item-meta">Needs analysis</span>
                         </button>

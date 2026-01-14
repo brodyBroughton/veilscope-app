@@ -73,9 +73,9 @@ export async function POST(req: NextRequest) {
   const desc = typeof body.desc === "string" ? body.desc : "";
   const tickerRaw = typeof body.ticker === "string" ? body.ticker : "";
 
-  if (!name || !desc || !tickerRaw) {
+  if (!tickerRaw) {
     return NextResponse.json(
-      { error: "Missing required fields: ticker, name, desc" },
+      { error: "Missing required field: ticker" },
       { status: 400 }
     );
   }
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     await prisma.item.update({
       where: { id: existing.id },
       data: {
-        title: name,
+        title: name || ticker,
         ticker,
         type: existing.type ?? "company",
         content: itemContent as unknown as Prisma.InputJsonValue,
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 
   await prisma.item.create({
     data: {
-      title: name,
+      title: name || ticker,
       ticker,
       type: "company",
       userId,

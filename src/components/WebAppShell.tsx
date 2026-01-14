@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import Topbar from "@/components/Topbar";
 import Drawer from "@/components/Drawer";
-import Workbench, { type CompanyLike } from "@/components/Workbench";
+import Workbench, { type AnalysisFacts, type CompanyLike } from "@/components/Workbench";
 
 type CompanySummary = {
   ticker: string;
@@ -27,6 +27,8 @@ export default function WebAppShell() {
   const [activeTicker, setActiveTicker] = useState<string>("");
   const [activeCompany, setActiveCompany] = useState<CompanyLike | null>(null);
   const [isRunningAnalysis, setIsRunningAnalysis] = useState(false);
+  const [analysisFacts, setAnalysisFacts] = useState<AnalysisFacts | null>(null);
+  const [analysisFactsTicker, setAnalysisFactsTicker] = useState<string>("");
 
   const [savedItems, setSavedItems] = useState<SavedItemDTO[]>([]);
 
@@ -90,6 +92,8 @@ export default function WebAppShell() {
   const handleSelectCompany = (company: CompanySummary) => {
     const ticker = company.ticker.toUpperCase();
     setActiveTicker(ticker);
+    setAnalysisFacts(null);
+    setAnalysisFactsTicker(ticker);
 
     // See if we already have a saved item for this ticker
     const saved = savedItems.find(
@@ -123,11 +127,7 @@ export default function WebAppShell() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            ticker,
-            name: company.name,
-            desc: company.desc,
-          }),
+          body: JSON.stringify({ ticker }),
         });
 
         if (!res.ok) {
@@ -168,6 +168,8 @@ export default function WebAppShell() {
 
     try {
       setIsRunningAnalysis(true);
+      setAnalysisFacts(null);
+      setAnalysisFactsTicker(ticker);
 
       const res = await fetch("/api/analysis", {
         method: "POST",
@@ -183,35 +185,9 @@ export default function WebAppShell() {
         return;
       }
 
-      const data = (await res.json()) as CompanyLike;
-
-      setActiveCompany((prev) => {
-        if (!prev) return data;
-        if (prev.ticker.toUpperCase() !== data.ticker.toUpperCase()) return data;
-        return {
-          ...prev,
-          score: data.score,
-          factors: data.factors,
-        };
-      });
-
-      // Update savedItems so Drawer reflects analysis status
-      setSavedItems((prev) => {
-        const others = prev.filter(
-          (item) => item.ticker.toUpperCase() !== data.ticker.toUpperCase()
-        );
-        return [
-          {
-            id: `${data.ticker}-local`,
-            ticker: data.ticker,
-            name: data.name,
-            desc: data.desc,
-            score: data.score,
-            factors: data.factors,
-          },
-          ...others,
-        ];
-      });
+      const data = await res.json();
+      console.log("Analysis response:", data);
+      setAnalysisFacts((data?.facts as AnalysisFacts | undefined) ?? null);
     } catch (err) {
       console.error("Analysis error:", err);
     } finally {
@@ -246,6 +222,8 @@ export default function WebAppShell() {
       <Workbench
         activeTicker={topbarTicker}
         company={activeCompany}
+        facts={analysisFactsTicker === topbarTicker ? analysisFacts : null}
+        isFactsLoading={isRunningAnalysis && analysisFactsTicker === topbarTicker}
         onRunAnalysis={handleRunAnalysis}
       />
 

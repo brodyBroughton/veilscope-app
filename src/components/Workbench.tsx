@@ -102,7 +102,31 @@ const extractSeries = (metricData: unknown, metricKey: string): ChartDatum[] => 
       items.push({ label, value, year, quarter });
     });
   } else if (metricData && typeof metricData === "object") {
-    Object.entries(metricData as Record<string, unknown>).forEach(([key, value]) => {
+    const metricRecord = metricData as Record<string, unknown>;
+    const yearsRecord =
+      metricRecord.years && typeof metricRecord.years === "object"
+        ? (metricRecord.years as Record<string, unknown>)
+        : null;
+
+    if (yearsRecord) {
+      Object.entries(yearsRecord).forEach(([yearKey, yearValue]) => {
+        const year = parseYear(yearKey) ?? parseYear(yearValue);
+        if (!yearValue || typeof yearValue !== "object") return;
+        Object.entries(yearValue as Record<string, unknown>).forEach(([qKey, qValue]) => {
+          const quarter = parseQuarter(qKey);
+          const numericValue = typeof qValue === "number" ? qValue : Number(qValue);
+          if (!Number.isFinite(numericValue)) return;
+          const label = buildLabel(quarter, year) || `${qKey} ${yearKey}`;
+          items.push({
+            label,
+            value: numericValue,
+            year,
+            quarter,
+          });
+        });
+      });
+    } else {
+      Object.entries(metricRecord).forEach(([key, value]) => {
       const yearFromKey = parseYear(key);
       const quarterFromKey = parseQuarter(key);
       if (typeof value === "number") {
@@ -131,7 +155,8 @@ const extractSeries = (metricData: unknown, metricKey: string): ChartDatum[] => 
           });
         });
       }
-    });
+      });
+    }
   }
 
   return items.sort((a, b) => {
